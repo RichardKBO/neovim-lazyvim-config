@@ -1,6 +1,9 @@
 local M = {}
 
--- Criar um arquivo C# usando um dos modelos disponíveis.
+-- ========================================
+-- CRIAR ARQUIVOS C# EXISTENTES
+-- ========================================
+
 local function criar_arquivo(modelo)
   local diretorio = vim.fn.expand("%:p:h")
 
@@ -67,7 +70,144 @@ local function criar_arquivo(modelo)
   vim.notify("Arquivo criado: " .. caminho)
 end
 
--- Criar um projeto C# completo.
+-- ========================================
+-- IDENTIFICAR NAMESPACE AUTOMATICAMENTE
+-- ========================================
+
+local function obter_namespace(diretorio)
+  local atual = vim.fs.normalize(diretorio)
+  local projeto = nil
+
+  -- Procurar o .csproj mais proximo, subindo as pastas.
+  while atual do
+    local projetos = vim.fn.globpath(atual, "*.csproj", false, true)
+
+    if #projetos > 1 then
+      return nil, "Existem vários .csproj na mesma pasta. " .. "Não é seguro escolher automaticamente."
+    end
+
+    if #projetos == 1 then
+      projeto = projetos[1]
+      break
+    end
+
+    local pai = vim.fs.dirname(atual)
+
+    if not pai or pai == atual then
+      break
+    end
+
+    atual = pai
+  end
+
+  if not projeto then
+    return nil, "Nenhum projeto .csproj encontrado."
+  end
+
+  -- Consultar o namespace real definido pelo MSBuild.
+  local resultado = vim.fn.system({
+    "dotnet",
+    "msbuild",
+    projeto,
+    "-getProperty:RootNamespace",
+  })
+
+  if vim.v.shell_error ~= 0 then
+    return nil, "Não foi possível consultar o RootNamespace:\n" .. resultado
+  end
+
+  local namespace = vim.trim(resultado)
+
+  if namespace == "" or namespace:find("\n", 1, true) then
+    return nil, "RootNamespace inválido ou vazio."
+  end
+
+  -- Adicionar ao namespace as subpastas do projeto.
+  local raiz_projeto = vim.fs.dirname(projeto)
+
+  local relativo = vim.fs.relpath(raiz_projeto, diretorio)
+
+  if relativo and relativo ~= "" and relativo ~= "." then
+    for pasta in relativo:gmatch("[^/\\]+") do
+      if not pasta:match("^[%a_][%w_]*$") then
+        return nil, "A pasta '" .. pasta .. "' não é um identificador C# válido."
+      end
+
+      namespace = namespace .. "." .. pasta
+    end
+  end
+
+  return namespace
+end
+
+-- ========================================
+-- CRIAR CLASSE C# COMUM
+-- ========================================
+
+local function criar_classe()
+  local arquivo_atual = vim.fn.expand("%:p")
+
+  local diretorio
+
+  if arquivo_atual == "" then
+    diretorio = vim.fn.getcwd()
+  else
+    diretorio = vim.fs.dirname(arquivo_atual)
+  end
+
+  local nome = vim.fn.input("Nome da classe C#: ")
+
+  if nome == "" then
+    vim.notify("Criação cancelada.", vim.log.levels.WARN)
+    return
+  end
+
+  nome = nome:gsub("%.cs$", "")
+
+  if not nome:match("^[%a_][%w_]*$") then
+    vim.notify("Nome inválido para uma classe C#.", vim.log.levels.ERROR)
+    return
+  end
+
+  local caminho = diretorio .. "/" .. nome .. ".cs"
+
+  if vim.fn.filereadable(caminho) == 1 then
+    vim.notify("O arquivo já existe: " .. caminho, vim.log.levels.ERROR)
+    return
+  end
+
+  local namespace, erro = obter_namespace(diretorio)
+
+  if not namespace then
+    vim.notify(erro, vim.log.levels.ERROR)
+    return
+  end
+
+  local linhas = {
+    "namespace " .. namespace .. ";",
+    "",
+    "public class " .. nome,
+    "{",
+    "}",
+    "",
+  }
+
+  local sucesso = vim.fn.writefile(linhas, caminho)
+
+  if sucesso ~= 0 then
+    vim.notify("Não foi possível criar a classe.", vim.log.levels.ERROR)
+    return
+  end
+
+  vim.cmd("edit " .. vim.fn.fnameescape(caminho))
+
+  vim.notify("Classe criada: " .. namespace .. "." .. nome)
+end
+
+-- ========================================
+-- CRIAR PROJETO C#
+-- ========================================
+
 local function criar_projeto()
   local tipos = {
     "Aplicativo de console",
@@ -146,7 +286,10 @@ local function criar_projeto()
   end)
 end
 
--- Localizar o projeto C# mais próximo.
+-- ========================================
+-- LOCALIZAR PROJETO ATUAL
+-- ========================================
+
 local function localizar_projeto()
   local arquivo = vim.fn.expand("%:p")
 
@@ -170,7 +313,10 @@ local function localizar_projeto()
   return projetos[1]
 end
 
--- Compilar o projeto C# atual.
+-- ========================================
+-- COMPILAR PROJETO ATUAL
+-- ========================================
+
 local function compilar_projeto()
   local projeto = localizar_projeto()
 
@@ -191,7 +337,10 @@ local function compilar_projeto()
   })
 end
 
--- Iniciar a depuração usando a configuração DAP existente.
+-- ========================================
+-- INICIAR DEPURACAO
+-- ========================================
+
 local function iniciar_depurar()
   local projeto = localizar_projeto()
 
@@ -210,10 +359,14 @@ local function iniciar_depurar()
   dap.continue()
 end
 
--- Abrir o menu interativo.
+-- ========================================
+-- MENU C#
+-- ========================================
+
 function M.abrir()
   local opcoes = {
     "Criar projeto C#",
+    "Criar classe C# (namespace automático)",
     "Criar arquivo com top-level statements",
     "Criar arquivo com Main tradicional",
     "Executar projeto atual",
@@ -231,6 +384,8 @@ function M.abrir()
 
     if escolha == "Criar projeto C#" then
       criar_projeto()
+    elseif escolha == "Criar classe C# (namespace automático)" then
+      criar_classe()
     elseif escolha == "Criar arquivo com top-level statements" then
       criar_arquivo("top-level")
     elseif escolha == "Criar arquivo com Main tradicional" then
@@ -243,7 +398,6 @@ function M.abrir()
         return
       end
 
-      -- Utilizar o executor C# modularizado.
       require("languages.csharp.runner").executar(arquivo)
     elseif escolha == "Compilar projeto atual" then
       compilar_projeto()
