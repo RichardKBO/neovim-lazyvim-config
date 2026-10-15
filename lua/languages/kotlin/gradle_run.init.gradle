@@ -1,0 +1,26 @@
+
+import org.gradle.api.tasks.JavaExec
+
+// Integracao do F6 Kotlin com o Gradle.
+//
+// Permite escolher a classe principal sem modificar
+// os arquivos build.gradle ou build.gradle.kts.
+//
+// Funciona com projetos que utilizam o plugin application.
+
+gradle.beforeProject { project ->
+
+    project.pluginManager.withPlugin("application") {
+
+        project.tasks.named("run", JavaExec).configure { task ->
+
+            def classeAtual = project.providers.gradleProperty(
+                "nvimKotlinMainClass"
+            )
+
+            if (classeAtual.isPresent()) {
+                task.mainClass.set(classeAtual)
+            }
+        }
+    }
+}

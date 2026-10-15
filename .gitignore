@@ -1,0 +1,86 @@
+
+# ========================================
+# LAZYVIM - REGRAS EXISTENTES
+# ========================================
+
+tt.*
+.tests
+doc/tags
+debug
+.repro
+foo.*
+*.log
+data
+
+# ========================================
+# ARQUIVOS TEMPORARIOS E BACKUPS
+# ========================================
+
+*.swp
+*.swo
+*.bak
+*~
+.DS_Store
+Thumbs.db
+
+# ========================================
+# PREFERENCIAS LOCAIS
+# ========================================
+
+/tema-atual.json
+
+# ========================================
+# CREDENCIAIS E SEGREDOS
+# ========================================
+
+.env
+.env.*
+!.env.example
+.envrc
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ========================================
+# DEPENDENCIAS GERADAS
+# ========================================
+
+node_modules/
+vendor/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ========================================
+# COMPILACAO E BUILD
+# ========================================
+
+bin/
+obj/
+build/
+dist/
+target/
+
+# ========================================
+# INSTALACOES E CACHE LOCAIS
+# ========================================
+
+/.cache/
+/.local/
+/mason/
+/lazy/
+
+# ========================================
+# ARQUIVOS QUE DEVEM SER VERSIONADOS
+# ========================================
+
+# init.lua
+# lua/
+# after/
+# lazy-lock.json
+# lazyvim.json
+# stylua.toml
+# README.md
+# LICENSE

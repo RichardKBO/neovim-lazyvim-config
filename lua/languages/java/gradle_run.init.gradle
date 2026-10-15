@@ -1,0 +1,22 @@
+
+import org.gradle.api.tasks.JavaExec
+
+// Configuracao exclusiva do F6 no Neovim.
+// Nao modifica o build.gradle dos projetos.
+
+gradle.beforeProject { project ->
+
+    project.pluginManager.withPlugin("application") {
+
+        project.tasks.named("run", JavaExec).configure { task ->
+
+            def classeAtual = project.providers.gradleProperty(
+                "nvimMainClass"
+            )
+
+            if (classeAtual.isPresent()) {
+                task.mainClass.set(classeAtual)
+            }
+        }
+    }
+}
