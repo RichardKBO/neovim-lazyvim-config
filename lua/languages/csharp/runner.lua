@@ -1,242 +1,500 @@
--- Execução de projetos C# pelo F6
+-- ========================================
+-- C# - RUNNER DINAMICO (F6)
+-- ========================================
+
 local M = {}
 
-local terminal_buffer = nil
+local terminais = {}
+local ultima_execucao = 0
 
-local function notificar(mensagem, nivel)
+local function avisar(mensagem, nivel)
   vim.notify(mensagem, nivel or vim.log.levels.INFO)
 end
 
--- Localizar o projeto C# mais próximo do arquivo atual.
-local function localizar_projeto(arquivo)
-  local projetos = vim.fs.find(function(nome)
-    return nome:match("%.csproj$") ~= nil
-  end, {
-    upward = true,
-    path = vim.fn.fnamemodify(arquivo, ":h"),
-  })
-
-  return projetos[1]
+local function diretorio(arquivo)
+  return vim.fn.fnamemodify(arquivo, ":h")
 end
 
--- Identificar namespace, classe e método Executar() no arquivo atual.
-local function ler_classe_executora(arquivo)
-  local linhas = vim.fn.readfile(arquivo)
-  local conteudo = table.concat(linhas, "\n")
+-- ========================================
+-- LOCALIZAR PROJETOS
+-- ========================================
 
-  local namespace = conteudo:match("namespace%s+([%w_%.]+)%s*[;{]")
-  local classe = conteudo:match("public%s+class%s+([%a_][%w_]*)")
-  local metodo_executar = conteudo:match("public%s+static%s+void%s+Executar%s*%(%s*%)")
+local function buscar_projetos(arquivo)
+  local pasta = diretorio(arquivo)
 
-  if not namespace or not classe or not metodo_executar then
+  -- Prioridade: projeto mais proximo do arquivo.
+  while pasta and pasta ~= "" do
+    local projetos = vim.fn.globpath(pasta, "*.csproj", false, true)
+
+    if #projetos > 0 then
+      table.sort(projetos)
+      return projetos
+    end
+
+    local pai = vim.fs.dirname(pasta)
+
+    if not pai or pai == pasta then
+      break
+    end
+
+    pasta = pai
+  end
+
+  -- Alternativa: procurar projetos dentro de
+  -- uma solucao encontrada na hierarquia.
+  local solucoes = vim.fs.find(function(nome)
+    return nome:match("%.slnx?$") ~= nil
+  end, {
+    path = diretorio(arquivo),
+    upward = true,
+  })
+
+  if #solucoes == 0 then
+    return {}
+  end
+
+  local raiz = diretorio(solucoes[1])
+
+  local encontrados = vim.fn.globpath(raiz, "**/*.csproj", false, true)
+
+  local projetos = {}
+
+  for _, projeto in ipairs(encontrados) do
+    if not projeto:find("/obj/", 1, true) and not projeto:find("/bin/", 1, true) then
+      table.insert(projetos, projeto)
+    end
+  end
+
+  table.sort(projetos)
+  return projetos
+end
+
+-- ========================================
+-- SELETOR GENERICO
+-- ========================================
+
+local function selecionar(opcoes, titulo, formatar, callback)
+  if #opcoes == 0 then
+    callback(nil)
+    return
+  end
+
+  if #opcoes == 1 then
+    callback(opcoes[1])
+    return
+  end
+
+  vim.ui.select(opcoes, {
+    prompt = titulo,
+    format_item = formatar,
+  }, callback)
+end
+
+-- ========================================
+-- IDENTIFICAR EXECUTORES DE EXERCICIOS
+-- ========================================
+
+local function ler_executor(arquivo)
+  if vim.fn.filereadable(arquivo) ~= 1 then
     return nil
   end
 
-  return namespace .. "." .. classe
+  local conteudo = table.concat(vim.fn.readfile(arquivo), "\n")
+
+  -- Compativel com o dispatcher atual:
+  -- public static void Executar()
+  if not conteudo:match("public%s+static%s+void%s+Executar%s*%(%s*%)") then
+    return nil
+  end
+
+  -- Reconhece class, static class e
+  -- declaracoes comuns de classe.
+  local classe = conteudo:match("%f[%w]class%s+([%a_][%w_]*)")
+
+  if not classe then
+    return nil
+  end
+
+  local namespace = conteudo:match("namespace%s+([%w_%.]+)%s*[;{]")
+
+  if namespace then
+    return namespace .. "." .. classe
+  end
+
+  return classe
 end
 
--- Executar um comando e capturar sua saída.
-local function executar_comando(comando, diretorio)
-  return vim.fn.system(comando)
-end
+local function listar_executores(arquivo)
+  local pasta = diretorio(arquivo)
+  local nome = vim.fn.fnamemodify(arquivo, ":t:r")
 
--- Preparar um terminal inferior sem substituir o buffer do código.
-local function preparar_terminal()
-  -- Guardar a janela do editor antes de procurar o terminal.
-  local janela_editor = vim.api.nvim_get_current_win()
-  local aba_atual = vim.api.nvim_get_current_tabpage()
-  local janela_terminal = nil
+  local candidatos = {}
+  local registrados = {}
 
-  -- Procurar um terminal apenas na aba atual.
-  for _, janela in ipairs(vim.api.nvim_tabpage_list_wins(aba_atual)) do
-    if janela ~= janela_editor then
-      local buffer_atual = vim.api.nvim_win_get_buf(janela)
+  local function adicionar(caminho)
+    if registrados[caminho] then
+      return
+    end
 
-      if vim.bo[buffer_atual].buftype == "terminal" then
-        janela_terminal = janela
-        break
-      end
+    registrados[caminho] = true
+
+    local classe = ler_executor(caminho)
+
+    if classe then
+      table.insert(candidatos, {
+        arquivo = caminho,
+        classe = classe,
+      })
     end
   end
 
-  if janela_terminal then
-    -- Reutilizar o espaço da janela de terminal existente.
-    vim.api.nvim_set_current_win(janela_terminal)
+  -- Primeiro, verificar o proprio arquivo.
+  adicionar(arquivo)
+
+  if #candidatos > 0 then
+    return candidatos, true
+  end
+
+  -- Depois, procurar o executor relacionado:
+  -- Desafio1.cs -> Desafio1Executar.cs
+  if not nome:match("Executar$") then
+    adicionar(pasta .. "/" .. nome .. "Executar.cs")
+  end
+
+  if #candidatos > 0 then
+    return candidatos, true
+  end
+
+  -- Por ultimo, descobrir executores na pasta.
+  local encontrados = vim.fn.globpath(pasta, "*Executar.cs", false, true)
+
+  for _, caminho in ipairs(encontrados) do
+    adicionar(caminho)
+  end
+
+  return candidatos, false
+end
+
+-- ========================================
+-- TERMINAL EXCLUSIVO DO C#
+-- ========================================
+
+local function abrir_terminal(comando, pasta)
+  local aba = vim.api.nvim_get_current_tabpage()
+  local janela = terminais[aba]
+
+  if janela and (not vim.api.nvim_win_is_valid(janela) or vim.api.nvim_win_get_tabpage(janela) ~= aba) then
+    janela = nil
+  end
+
+  if janela then
+    vim.api.nvim_set_current_win(janela)
+
+    local antigo = vim.api.nvim_win_get_buf(janela)
+
+    -- Interromper somente o job do terminal C#.
+    if vim.bo[antigo].buftype == "terminal" then
+      local job = vim.b[antigo].terminal_job_id
+
+      if job then
+        pcall(vim.fn.jobstop, job)
+      end
+    end
+
+    local novo = vim.api.nvim_create_buf(false, true)
+
+    vim.api.nvim_win_set_buf(janela, novo)
+
     vim.cmd("wincmd J")
     vim.cmd("resize 12")
   else
-    -- Criar uma divisão inferior sem mexer no buffer do editor.
-    vim.api.nvim_set_current_win(janela_editor)
-    vim.cmd("botright 12split")
-    janela_terminal = vim.api.nvim_get_current_win()
+    vim.cmd("botright 12new")
+
+    janela = vim.api.nvim_get_current_win()
+    terminais[aba] = janela
   end
 
-  -- Guardar o buffer antigo antes de criar o novo terminal.
-  local buffer_antigo = vim.api.nvim_win_get_buf(janela_terminal)
+  local buffer = vim.api.nvim_win_get_buf(janela)
 
-  if vim.bo[buffer_antigo].buftype == "terminal" then
-    local job_id = vim.b[buffer_antigo].terminal_job_id
+  vim.bo[buffer].bufhidden = "wipe"
+  vim.bo[buffer].swapfile = false
 
-    -- Interromper a execução anterior, caso ainda esteja ativa.
-    if job_id then
-      pcall(vim.fn.jobstop, job_id)
-    end
-  end
+  -- Argumentos em lista: sem concatenacao de shell.
+  local job = vim.fn.termopen(comando, {
+    cwd = pasta,
+  })
 
-  -- Criar um buffer novo exclusivamente para a execução.
-  -- Não usar :enew, pois ele pode substituir o buffer errado.
-  local novo_buffer = vim.api.nvim_create_buf(false, true)
-
-  vim.api.nvim_win_set_buf(janela_terminal, novo_buffer)
-  vim.api.nvim_set_current_win(janela_terminal)
-
-  terminal_buffer = novo_buffer
-
-  vim.bo[novo_buffer].bufhidden = "hide"
-  vim.bo[novo_buffer].swapfile = false
-
-  return novo_buffer
-end
-
-function M.executar(arquivo)
-  if not arquivo or arquivo == "" or vim.fn.filereadable(arquivo) ~= 1 then
-    notificar("Salve o arquivo C# antes de executá-lo.", vim.log.levels.ERROR)
+  if job <= 0 then
+    avisar("C#: falha ao iniciar o terminal.", vim.log.levels.ERROR)
     return
   end
 
-  -- Impedir execução com alterações não salvas no arquivo atual.
+  vim.cmd("startinsert")
+end
+
+-- ========================================
+-- CONSULTAR MSBUILD SEM BLOQUEAR O EDITOR
+-- ========================================
+
+local function consultar_projeto(projeto, callback)
+  local comando = {
+    "dotnet",
+    "msbuild",
+    projeto,
+    "-getProperty:EnableClassRunner,TargetFramework,TargetFrameworks,OutputType,IsTestProject",
+  }
+
+  vim.system(comando, {
+    cwd = diretorio(projeto),
+    text = true,
+  }, function(resultado)
+    vim.schedule(function()
+      if resultado.code ~= 0 then
+        avisar("C#: erro ao consultar o projeto:\n" .. (resultado.stderr or ""), vim.log.levels.ERROR)
+        return
+      end
+
+      local ok, dados = pcall(vim.json.decode, resultado.stdout or "")
+
+      if not ok or type(dados) ~= "table" or type(dados.Properties) ~= "table" then
+        avisar("C#: resposta inesperada do MSBuild.", vim.log.levels.ERROR)
+        return
+      end
+
+      callback(dados.Properties)
+    end)
+  end)
+end
+
+-- ========================================
+-- MONTAR COMANDO DE EXECUCAO
+-- ========================================
+
+local function criar_comando(projeto, propriedades, framework, classe)
+  local pasta = diretorio(projeto)
+
+  local testes = (tostring(propriedades.IsTestProject):lower() == "true")
+
+  local tipo = tostring(propriedades.OutputType or ""):lower()
+
+  local comando
+
+  if testes then
+    comando = {
+      "dotnet",
+      "test",
+      projeto,
+      "--configuration",
+      "Debug",
+    }
+
+    avisar("C#: executando testes.")
+  elseif tipo == "library" then
+    comando = {
+      "dotnet",
+      "build",
+      projeto,
+      "--configuration",
+      "Debug",
+    }
+
+    avisar("C#: compilando biblioteca.")
+  else
+    comando = {
+      "dotnet",
+      "run",
+      "--project",
+      projeto,
+      "--configuration",
+      "Debug",
+    }
+
+    if classe then
+      avisar("C#: executando " .. classe)
+    else
+      avisar("C#: executando projeto " .. vim.fn.fnamemodify(projeto, ":t:r"))
+    end
+  end
+
+  if framework and framework ~= "" then
+    table.insert(comando, "--framework")
+    table.insert(comando, framework)
+  end
+
+  -- Argumentos do dispatcher sao enviados
+  -- somente quando ele foi selecionado.
+  if classe and not testes and tipo ~= "library" then
+    table.insert(comando, "--")
+    table.insert(comando, "--executar")
+    table.insert(comando, classe)
+  end
+
+  abrir_terminal(comando, pasta)
+end
+
+-- ========================================
+-- SELECIONAR MODO DE EXECUCAO
+-- ========================================
+
+local function escolher_execucao(arquivo, projeto, propriedades, framework)
+  local function executar(classe)
+    criar_comando(projeto, propriedades, framework, classe)
+  end
+
+  local habilitado = (tostring(propriedades.EnableClassRunner):lower() == "true")
+
+  local testes = (tostring(propriedades.IsTestProject):lower() == "true")
+
+  local biblioteca = (tostring(propriedades.OutputType or ""):lower() == "library")
+
+  -- Bibliotecas e testes seguem seu proprio modo.
+  if testes or biblioteca or not habilitado then
+    executar(nil)
+    return
+  end
+
+  -- Program.cs deve continuar podendo executar
+  -- o ponto de entrada normal.
+  if vim.fn.fnamemodify(arquivo, ":t") == "Program.cs" then
+    executar(nil)
+    return
+  end
+
+  local candidatos, correspondencia_direta = listar_executores(arquivo)
+
+  if #candidatos == 0 then
+    executar(nil)
+    return
+  end
+
+  -- Executor no arquivo atual ou com nome
+  -- correspondente: escolha automatica.
+  if correspondencia_direta and #candidatos == 1 then
+    executar(candidatos[1].classe)
+    return
+  end
+
+  -- Outros executores na mesma pasta:
+  -- permitir escolha sem presumir o alvo.
+  local opcoes = {
+    {
+      descricao = "Executar projeto normalmente",
+      classe = nil,
+    },
+  }
+
+  for _, candidato in ipairs(candidatos) do
+    table.insert(opcoes, {
+      descricao = "Executar " .. candidato.classe,
+      classe = candidato.classe,
+    })
+  end
+
+  selecionar(opcoes, "C# - Escolha a execucao", function(item)
+    return item.descricao
+  end, function(item)
+    if item then
+      executar(item.classe)
+    end
+  end)
+end
+
+-- ========================================
+-- SELECIONAR FRAMEWORK
+-- ========================================
+
+local function preparar_execucao(arquivo, projeto, propriedades)
+  local frameworks = tostring(propriedades.TargetFrameworks or "")
+
+  local opcoes = {}
+
+  if frameworks ~= "" then
+    opcoes = vim.split(frameworks, ";", {
+      plain = true,
+      trimempty = true,
+    })
+  end
+
+  if #opcoes == 0 then
+    local unico = tostring(propriedades.TargetFramework or "")
+
+    if unico ~= "" then
+      table.insert(opcoes, unico)
+    end
+  end
+
+  -- Nenhum framework especifico: deixar
+  -- o dotnet resolver o projeto.
+  if #opcoes == 0 then
+    escolher_execucao(arquivo, projeto, propriedades, nil)
+    return
+  end
+
+  selecionar(opcoes, "C# - Selecione o framework", function(item)
+    return item
+  end, function(framework)
+    if framework then
+      escolher_execucao(arquivo, projeto, propriedades, framework)
+    end
+  end)
+end
+
+-- ========================================
+-- F6 - ENTRADA PRINCIPAL
+-- ========================================
+
+function M.executar(arquivo)
+  if vim.fn.executable("dotnet") ~= 1 then
+    avisar("C#: dotnet nao encontrado.", vim.log.levels.ERROR)
+    return
+  end
+
+  if not arquivo or arquivo == "" then
+    avisar("C#: nenhum arquivo selecionado.", vim.log.levels.WARN)
+    return
+  end
+
+  arquivo = vim.fs.normalize(vim.fn.fnamemodify(arquivo, ":p"))
+
+  if vim.fn.filereadable(arquivo) ~= 1 then
+    avisar("C#: salve o arquivo antes de executar.", vim.log.levels.WARN)
+    return
+  end
+
   local buffer = vim.fn.bufnr(arquivo)
 
   if buffer ~= -1 and vim.bo[buffer].modified then
-    notificar("Salve as alterações antes de executar o C#.", vim.log.levels.WARN)
+    avisar("C#: salve as alteracoes antes de executar.", vim.log.levels.WARN)
     return
   end
 
-  arquivo = vim.fn.fnamemodify(arquivo, ":p")
+  local projetos = buscar_projetos(arquivo)
 
-  local projeto = localizar_projeto(arquivo)
-
-  if not projeto then
-    notificar("Nenhum arquivo .csproj encontrado.", vim.log.levels.ERROR)
+  if #projetos == 0 then
+    avisar("C#: nenhum .csproj encontrado.", vim.log.levels.ERROR)
     return
   end
 
-  projeto = vim.fn.fnamemodify(projeto, ":p")
+  -- Evitar que uma consulta antiga execute
+  -- depois de outra chamada de F6.
+  ultima_execucao = ultima_execucao + 1
+  local chamada = ultima_execucao
 
-  local diretorio_projeto = vim.fn.fnamemodify(projeto, ":h")
-
-  -- Verificar se o projeto permite executar classes individuais.
-  local class_runner = executar_comando({
-    "dotnet",
-    "msbuild",
-    projeto,
-    "-getProperty:EnableClassRunner",
-  }, diretorio_projeto)
-
-  if vim.v.shell_error ~= 0 then
-    notificar("Não foi possível consultar EnableClassRunner:\n" .. class_runner, vim.log.levels.ERROR)
-    return
-  end
-
-  class_runner = vim.trim(class_runner)
-
-  local classe_completa = nil
-
-  if class_runner:lower() == "true" then
-    classe_completa = ler_classe_executora(arquivo)
-
-    if not classe_completa then
-      notificar(
-        "Não foi possível identificar namespace, classe pública e método Executar() no arquivo atual.",
-        vim.log.levels.ERROR
-      )
+  selecionar(projetos, "C# - Selecione o projeto", function(projeto)
+    return vim.fn.fnamemodify(projeto, ":t") .. " - " .. diretorio(projeto)
+  end, function(projeto)
+    if not projeto or chamada ~= ultima_execucao then
       return
     end
-  end
 
-  -- Compilar o projeto em modo Debug.
-  notificar("Compilando projeto C#...")
+    consultar_projeto(projeto, function(propriedades)
+      if chamada ~= ultima_execucao then
+        return
+      end
 
-  local resultado = executar_comando({
-    "dotnet",
-    "build",
-    projeto,
-    "--configuration",
-    "Debug",
-  }, diretorio_projeto)
-
-  if vim.v.shell_error ~= 0 then
-    notificar("Falha na compilação:\n" .. resultado, vim.log.levels.ERROR)
-    return
-  end
-
-  -- Consultar o framework de destino.
-  local framework = executar_comando({
-    "dotnet",
-    "msbuild",
-    projeto,
-    "-getProperty:TargetFramework",
-  }, diretorio_projeto)
-
-  if vim.v.shell_error ~= 0 then
-    notificar("Não foi possível identificar o TargetFramework:\n" .. framework, vim.log.levels.ERROR)
-    return
-  end
-
-  framework = vim.trim(framework)
-
-  if framework == "" or framework:find("\n", 1, true) then
-    notificar("TargetFramework vazio ou com múltiplos valores.", vim.log.levels.ERROR)
-    return
-  end
-
-  local nome_projeto = vim.fn.fnamemodify(projeto, ":t:r")
-
-  local dll = diretorio_projeto .. "/bin/Debug/" .. framework .. "/" .. nome_projeto .. ".dll"
-
-  if vim.fn.filereadable(dll) ~= 1 then
-    notificar("DLL compilada não encontrada: " .. dll, vim.log.levels.ERROR)
-    return
-  end
-
-  -- Montar o comando de execução.
-  local comando = { "dotnet", dll }
-
-  if classe_completa then
-    table.insert(comando, "--executar")
-    table.insert(comando, classe_completa)
-
-    notificar("Executando a classe: " .. classe_completa)
-  else
-    notificar("Executando o projeto C# normalmente.")
-  end
-
-  -- Escapar os argumentos para execução segura pelo Bash.
-  local argumentos = {}
-
-  for _, argumento in ipairs(comando) do
-    table.insert(argumentos, vim.fn.shellescape(argumento))
-  end
-
-  local comando_shell = table.concat(argumentos, " ")
-    .. "; codigo=$?; printf '\\n\\nExecução finalizada (código %s).\\n' \"$codigo\"; "
-    .. "read -n 1 -s -r -p 'Pressione qualquer tecla para fechar este terminal...'; "
-    .. 'exit "$codigo"'
-
-  -- Preparar o terminal inferior reutilizável.
-  preparar_terminal()
-
-  local job_id = vim.fn.termopen({ "bash", "-lc", comando_shell }, {
-    cwd = diretorio_projeto,
-  })
-
-  if job_id <= 0 then
-    notificar("Não foi possível iniciar o terminal C#.", vim.log.levels.ERROR)
-    return
-  end
-
-  -- Entrar no terminal para acompanhar a execução.
-  vim.cmd("startinsert")
+      preparar_execucao(arquivo, projeto, propriedades)
+    end)
+  end)
 end
 
 return M

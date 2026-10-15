@@ -1,9 +1,25 @@
--- Configuração modular do Roslyn LSP para C#
--- O plugin seblyng/roslyn.nvim continua gerenciado pelo LazyVim.
+-- ========================================
+-- C# - INICIALIZACAO MODULAR
+-- ========================================
+-- Roslyn LSP gerenciado pelo LazyVim.
+-- Diagnosticos inline configurados
+-- exclusivamente para C#.
 
 local M = {}
 
 function M.setup()
+  -- ========================================
+  -- DIAGNOSTICOS INLINE
+  -- ========================================
+
+  -- Registrar os eventos antes de habilitar
+  -- o LSP, para acompanhar novas conexoes.
+  require("languages.csharp.diagnostics").setup()
+
+  -- ========================================
+  -- CONFIGURACAO DO ROSLYN
+  -- ========================================
+
   vim.lsp.config("roslyn", {
     cmd = {
       vim.fn.expand("~/.dotnet/tools/roslyn-language-server"),
@@ -22,7 +38,10 @@ function M.setup()
     },
   })
 
-  -- Habilitar o servidor Roslyn.
+  -- ========================================
+  -- HABILITAR ROSLYN
+  -- ========================================
+
   vim.lsp.enable("roslyn")
 end
 
