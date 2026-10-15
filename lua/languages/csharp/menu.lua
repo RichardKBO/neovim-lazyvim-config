@@ -1,73 +1,23 @@
+-- ========================================
+-- C# - MENU GLOBAL
+-- ========================================
+
 local M = {}
 
 -- ========================================
--- CRIAR ARQUIVOS C# EXISTENTES
+-- LOCALIZAR PROJETO ANCESTRAL
 -- ========================================
 
-local function criar_arquivo(modelo)
-  local diretorio = vim.fn.expand("%:p:h")
+local function encontrar_projeto_ancestral(diretorio)
+  local projetos = vim.fs.find(function(nome)
+    return nome:match("%.csproj$") ~= nil
+  end, {
+    upward = true,
+    path = diretorio,
+    limit = 1,
+  })
 
-  if vim.fn.expand("%:p") == "" then
-    diretorio = vim.fn.getcwd()
-  end
-
-  local nome = vim.fn.input("Nome do arquivo (sem .cs): ")
-
-  if nome == "" then
-    vim.notify("Criação cancelada.", vim.log.levels.WARN)
-    return
-  end
-
-  if nome:find("[/\\]") then
-    vim.notify("Digite apenas o nome do arquivo, sem diretórios.", vim.log.levels.ERROR)
-    return
-  end
-
-  nome = nome:gsub("%.cs$", "")
-
-  if not nome:match("^[%a_][%w_]*$") then
-    vim.notify("Nome inválido para uma classe C#.", vim.log.levels.ERROR)
-    return
-  end
-
-  local caminho = diretorio .. "/" .. nome .. ".cs"
-
-  if vim.fn.filereadable(caminho) == 1 then
-    vim.notify("O arquivo já existe: " .. caminho, vim.log.levels.ERROR)
-    return
-  end
-
-  local linhas
-
-  if modelo == "top-level" then
-    linhas = {
-      'Console.WriteLine("Olá, mundo!");',
-      "",
-    }
-  else
-    linhas = {
-      "namespace MeuProjeto;",
-      "",
-      "internal class " .. nome,
-      "{",
-      "    static void Main(string[] args)",
-      "    {",
-      '        Console.WriteLine("Olá, mundo!");',
-      "    }",
-      "}",
-      "",
-    }
-  end
-
-  local sucesso = vim.fn.writefile(linhas, caminho)
-
-  if sucesso ~= 0 then
-    vim.notify("Não foi possível criar o arquivo.", vim.log.levels.ERROR)
-    return
-  end
-
-  vim.cmd("edit " .. vim.fn.fnameescape(caminho))
-  vim.notify("Arquivo criado: " .. caminho)
+  return projetos[1]
 end
 
 -- ========================================
@@ -78,12 +28,11 @@ local function obter_namespace(diretorio)
   local atual = vim.fs.normalize(diretorio)
   local projeto = nil
 
-  -- Procurar o .csproj mais proximo, subindo as pastas.
   while atual do
     local projetos = vim.fn.globpath(atual, "*.csproj", false, true)
 
     if #projetos > 1 then
-      return nil, "Existem vários .csproj na mesma pasta. " .. "Não é seguro escolher automaticamente."
+      return nil, "Existem varios .csproj na mesma pasta. " .. "Nao e seguro escolher automaticamente."
     end
 
     if #projetos == 1 then
@@ -104,7 +53,6 @@ local function obter_namespace(diretorio)
     return nil, "Nenhum projeto .csproj encontrado."
   end
 
-  -- Consultar o namespace real definido pelo MSBuild.
   local resultado = vim.fn.system({
     "dotnet",
     "msbuild",
@@ -113,16 +61,15 @@ local function obter_namespace(diretorio)
   })
 
   if vim.v.shell_error ~= 0 then
-    return nil, "Não foi possível consultar o RootNamespace:\n" .. resultado
+    return nil, "Nao foi possivel consultar o RootNamespace:\n" .. resultado
   end
 
   local namespace = vim.trim(resultado)
 
   if namespace == "" or namespace:find("\n", 1, true) then
-    return nil, "RootNamespace inválido ou vazio."
+    return nil, "RootNamespace invalido ou vazio."
   end
 
-  -- Adicionar ao namespace as subpastas do projeto.
   local raiz_projeto = vim.fs.dirname(projeto)
 
   local relativo = vim.fs.relpath(raiz_projeto, diretorio)
@@ -130,7 +77,7 @@ local function obter_namespace(diretorio)
   if relativo and relativo ~= "" and relativo ~= "." then
     for pasta in relativo:gmatch("[^/\\]+") do
       if not pasta:match("^[%a_][%w_]*$") then
-        return nil, "A pasta '" .. pasta .. "' não é um identificador C# válido."
+        return nil, "A pasta '" .. pasta .. "' nao e um identificador C# valido."
       end
 
       namespace = namespace .. "." .. pasta
@@ -141,7 +88,7 @@ local function obter_namespace(diretorio)
 end
 
 -- ========================================
--- CRIAR CLASSE C# COMUM
+-- CRIAR CLASSE COMUM
 -- ========================================
 
 local function criar_classe()
@@ -158,21 +105,21 @@ local function criar_classe()
   local nome = vim.fn.input("Nome da classe C#: ")
 
   if nome == "" then
-    vim.notify("Criação cancelada.", vim.log.levels.WARN)
+    vim.notify("Criacao cancelada.", vim.log.levels.WARN)
     return
   end
 
   nome = nome:gsub("%.cs$", "")
 
   if not nome:match("^[%a_][%w_]*$") then
-    vim.notify("Nome inválido para uma classe C#.", vim.log.levels.ERROR)
+    vim.notify("Nome invalido para uma classe C#.", vim.log.levels.ERROR)
     return
   end
 
   local caminho = diretorio .. "/" .. nome .. ".cs"
 
-  if vim.fn.filereadable(caminho) == 1 then
-    vim.notify("O arquivo já existe: " .. caminho, vim.log.levels.ERROR)
+  if vim.uv.fs_lstat(caminho) then
+    vim.notify("O arquivo ja existe: " .. caminho, vim.log.levels.ERROR)
     return
   end
 
@@ -195,7 +142,7 @@ local function criar_classe()
   local sucesso = vim.fn.writefile(linhas, caminho)
 
   if sucesso ~= 0 then
-    vim.notify("Não foi possível criar a classe.", vim.log.levels.ERROR)
+    vim.notify("Nao foi possivel criar a classe.", vim.log.levels.ERROR)
     return
   end
 
@@ -205,55 +152,119 @@ local function criar_classe()
 end
 
 -- ========================================
--- CRIAR PROJETO C#
+-- ESCOLHER DIRETORIO BASE DE PROJETOS
+-- ========================================
+
+local function obter_diretorio_base()
+  local atual = vim.fs.normalize(vim.fn.getcwd())
+
+  local projeto = encontrar_projeto_ancestral(atual)
+
+  -- Se estivermos dentro de um projeto,
+  -- sugerir a pasta pai para criar um irmao.
+  if projeto then
+    return vim.fs.dirname(vim.fs.dirname(projeto))
+  end
+
+  return atual
+end
+
+-- ========================================
+-- CRIAR PROJETO PELO TEMPLATE OFICIAL
 -- ========================================
 
 local function criar_projeto()
   local tipos = {
-    "Aplicativo de console",
-    "Biblioteca de classes",
-    "Cancelar",
+    {
+      nome = "Console - top-level statements",
+      template = "console",
+      main_tradicional = false,
+    },
+    {
+      nome = "Console - Main tradicional",
+      template = "console",
+      main_tradicional = true,
+    },
+    {
+      nome = "Biblioteca de classes",
+      template = "classlib",
+      main_tradicional = false,
+    },
   }
 
   vim.ui.select(tipos, {
     prompt = "Tipo de projeto C#",
+
+    format_item = function(item)
+      return item.nome
+    end,
   }, function(tipo)
-    if not tipo or tipo == "Cancelar" then
+    if not tipo then
       return
     end
 
     local nome = vim.fn.input("Nome do projeto: ")
 
     if not nome:match("^[%a_][%w_]*$") then
-      vim.notify("Nome de projeto inválido.", vim.log.levels.ERROR)
+      vim.notify("Nome de projeto invalido.", vim.log.levels.ERROR)
       return
     end
 
-    local raiz = vim.fn.getcwd()
-    local destino = raiz .. "/" .. nome
+    -- Permitir projetos em qualquer diretorio.
+    local sugerido = obter_diretorio_base()
 
-    if vim.fn.isdirectory(destino) == 1 or vim.fn.filereadable(destino) == 1 then
-      vim.notify("Já existe um item com esse nome: " .. destino, vim.log.levels.ERROR)
+    local entrada = vim.fn.input("Diretorio pai do projeto: ", sugerido, "dir")
+
+    if entrada == "" then
+      vim.notify("Criacao cancelada.", vim.log.levels.WARN)
       return
     end
 
-    local template = "console"
+    local raiz = vim.fs.normalize(vim.fn.fnamemodify(vim.fn.expand(entrada), ":p"))
 
-    if tipo == "Biblioteca de classes" then
-      template = "classlib"
+    if vim.fn.isdirectory(raiz) ~= 1 then
+      vim.notify("O diretorio pai nao existe: " .. raiz, vim.log.levels.ERROR)
+      return
     end
 
-    vim.notify("Criando projeto " .. nome .. "...")
+    -- Evitar projetos aninhados acidentalmente.
+    local projeto_existente = encontrar_projeto_ancestral(raiz)
 
-    local resultado = vim.fn.system({
+    if projeto_existente then
+      vim.notify(
+        "O diretorio escolhido ja pertence a um projeto C#:\n"
+          .. projeto_existente
+          .. "\nEscolha um diretorio fora desse projeto.",
+        vim.log.levels.ERROR
+      )
+      return
+    end
+
+    local destino = vim.fs.joinpath(raiz, nome)
+
+    if vim.uv.fs_lstat(destino) then
+      vim.notify("Ja existe um item com esse nome: " .. destino, vim.log.levels.ERROR)
+      return
+    end
+
+    local comando = {
       "dotnet",
       "new",
-      template,
+      tipo.template,
       "--name",
       nome,
       "--output",
       destino,
-    })
+    }
+
+    -- Diferenciar os dois modelos Console.
+    if tipo.main_tradicional then
+      table.insert(comando, "--use-program-main")
+    end
+
+    vim.notify("Criando projeto: " .. destino)
+
+    local resultado = vim.fn.system(comando)
 
     if vim.v.shell_error ~= 0 then
       vim.notify("Falha ao criar projeto:\n" .. resultado, vim.log.levels.ERROR)
@@ -265,17 +276,22 @@ local function criar_projeto()
     vim.ui.select({
       "Abrir arquivo principal",
       "Abrir pasta do projeto",
-      "Deixar como está",
+      "Deixar como esta",
     }, {
       prompt = "Projeto criado. O que deseja fazer?",
     }, function(acao)
       if acao == "Abrir arquivo principal" then
         local arquivo_principal
 
-        if template == "console" then
+        if tipo.template == "console" then
           arquivo_principal = destino .. "/Program.cs"
         else
           arquivo_principal = destino .. "/Class1.cs"
+        end
+
+        if vim.fn.filereadable(arquivo_principal) ~= 1 then
+          vim.notify("Arquivo principal nao encontrado: " .. arquivo_principal, vim.log.levels.ERROR)
+          return
         end
 
         vim.cmd("edit " .. vim.fn.fnameescape(arquivo_principal))
@@ -287,7 +303,7 @@ local function criar_projeto()
 end
 
 -- ========================================
--- LOCALIZAR PROJETO ATUAL
+-- LOCALIZAR PROJETO DO ARQUIVO ATUAL
 -- ========================================
 
 local function localizar_projeto()
@@ -298,19 +314,14 @@ local function localizar_projeto()
     return nil
   end
 
-  local projetos = vim.fs.find(function(nome)
-    return nome:match("%.csproj$") ~= nil
-  end, {
-    upward = true,
-    path = vim.fn.fnamemodify(arquivo, ":h"),
-  })
+  local projeto = encontrar_projeto_ancestral(vim.fs.dirname(arquivo))
 
-  if not projetos[1] then
+  if not projeto then
     vim.notify("Nenhum projeto .csproj encontrado.", vim.log.levels.ERROR)
     return nil
   end
 
-  return projetos[1]
+  return projeto
 end
 
 -- ========================================
@@ -333,12 +344,12 @@ local function compilar_projeto()
     "--configuration",
     "Debug",
   }, {
-    cwd = vim.fn.fnamemodify(projeto, ":h"),
+    cwd = vim.fs.dirname(projeto),
   })
 end
 
 -- ========================================
--- INICIAR DEPURACAO
+-- INICIAR DEPURACAO EXISTENTE
 -- ========================================
 
 local function iniciar_depurar()
@@ -352,7 +363,7 @@ local function iniciar_depurar()
   local configuracoes = dap.configurations.cs
 
   if not configuracoes or #configuracoes == 0 then
-    vim.notify("Nenhuma configuração DAP encontrada para C#.", vim.log.levels.ERROR)
+    vim.notify("Nenhuma configuracao DAP encontrada para C#.", vim.log.levels.ERROR)
     return
   end
 
@@ -366,12 +377,10 @@ end
 function M.abrir()
   local opcoes = {
     "Criar projeto C#",
-    "Criar classe C# (namespace automático)",
-    "Criar arquivo com top-level statements",
-    "Criar arquivo com Main tradicional",
+    "Criar classe C# (namespace automatico)",
     "Executar projeto atual",
     "Compilar projeto atual",
-    "Iniciar depuração",
+    "Iniciar depuracao",
     "Cancelar",
   }
 
@@ -384,12 +393,8 @@ function M.abrir()
 
     if escolha == "Criar projeto C#" then
       criar_projeto()
-    elseif escolha == "Criar classe C# (namespace automático)" then
+    elseif escolha == "Criar classe C# (namespace automatico)" then
       criar_classe()
-    elseif escolha == "Criar arquivo com top-level statements" then
-      criar_arquivo("top-level")
-    elseif escolha == "Criar arquivo com Main tradicional" then
-      criar_arquivo("main")
     elseif escolha == "Executar projeto atual" then
       local arquivo = vim.fn.expand("%:p")
 
@@ -401,7 +406,7 @@ function M.abrir()
       require("languages.csharp.runner").executar(arquivo)
     elseif escolha == "Compilar projeto atual" then
       compilar_projeto()
-    elseif escolha == "Iniciar depuração" then
+    elseif escolha == "Iniciar depuracao" then
       iniciar_depurar()
     end
   end)
