@@ -15,6 +15,12 @@ vim.api.nvim_create_autocmd("InsertCharPre", {
   end,
 })
 
+-- Registrar o comando :RubyMenu.
+require("languages.ruby.menu").setup()
+
+-- Atalhos contextuais dos buffers Ruby.
+require("languages.ruby.keymaps").setup()
+
 -- ========================================
 -- C / C++
 -- ========================================
