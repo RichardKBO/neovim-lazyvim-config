@@ -74,6 +74,13 @@ require("languages.python.menu").setup()
 require("languages.python.keymaps").setup()
 
 -- ========================================
+-- PHP
+-- ========================================
+
+-- Inicializacao global do Intelephense.
+require("languages.php.lsp").setup()
+
+-- ========================================
 -- CMAKE
 -- ========================================
 
