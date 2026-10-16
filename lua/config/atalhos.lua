@@ -104,6 +104,13 @@ local function montar_linhas(buffer_origem)
     inserir_secao(linhas, go.linhas_ajuda())
   end
 
+  -- Python.
+  local python = require("languages.python.keymaps")
+
+  if python.eh_contexto_python(buffer_origem) then
+    inserir_secao(linhas, python.linhas_ajuda())
+  end
+
   return linhas
 end
 

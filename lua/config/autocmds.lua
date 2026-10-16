@@ -58,6 +58,16 @@ require("languages.go.keymaps").setup()
 require("languages.go.menu").setup()
 
 -- ========================================
+-- PYTHON
+-- ========================================
+
+-- Registrar o comando :PythonMenu.
+require("languages.python.menu").setup()
+
+-- Atalhos contextuais dos buffers Python.
+require("languages.python.keymaps").setup()
+
+-- ========================================
 -- CMAKE
 -- ========================================
 
