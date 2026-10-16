@@ -111,6 +111,13 @@ local function montar_linhas(buffer_origem)
     inserir_secao(linhas, python.linhas_ajuda())
   end
 
+  -- Ruby.
+  local ruby = require("languages.ruby.keymaps")
+
+  if ruby.eh_contexto_ruby(buffer_origem) then
+    inserir_secao(linhas, ruby.linhas_ajuda())
+  end
+
   return linhas
 end
 
