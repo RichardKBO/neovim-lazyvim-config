@@ -121,6 +121,12 @@ function M.abrir()
     -- PROJETO E ESTRUTURA
     -- ====================================
     {
+      nome = "Criar novo projeto Ruby (Simples / Bundler)",
+      executar = function()
+        require("languages.ruby.projects").criar()
+      end,
+    },
+    {
       nome = "Novo elemento Ruby (Classe, Modulo, Arquivo)",
       executar = function()
         require("languages.ruby.types").criar(arquivo)
