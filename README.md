@@ -1,16 +1,17 @@
+
 # 🖥️ Neovim / LazyVim — IDE Multilinguagem
 
 ![Neovim](https://img.shields.io/badge/Editor-Neovim-57A143)
 ![LazyVim](https://img.shields.io/badge/Base-LazyVim-7C3AED)
 ![Lua](https://img.shields.io/badge/Configura%C3%A7%C3%A3o-Lua-2C2D72)
-![Linguagens](https://img.shields.io/badge/Linguagens-5%2F11_conclu%C3%ADdas-blue)
+![Linguagens](https://img.shields.io/badge/Linguagens-7%2F11_auditadas-blue)
 ![Status](https://img.shields.io/badge/Status-Em_desenvolvimento-orange)
 
 Configuração pessoal de **Neovim com LazyVim**, organizada em módulos por linguagem para criar um ambiente de desenvolvimento semelhante a uma IDE, com **LSP, autocomplete, diagnósticos, execução, depuração, menus e gerenciamento de projetos**.
 
-O desenvolvimento é incremental. As alterações serão acompanhadas com **Issues, branches, commits e Pull Requests**, depois de testes e revisão.
+O desenvolvimento é incremental. As alterações são acompanhadas com **Issues, branches, commits e Pull Requests**, depois de testes e revisão.
 
-> **Estado atual:** Rust, Java, Kotlin, C++ e Go passaram pela auditoria principal. As outras seis linguagens ainda precisam de revisão ou implementação de recursos. Este repositório está em desenvolvimento, não é uma distribuição pronta para todos os ambientes.
+> **Estado atual:** Rust, Java, Kotlin, C++, Go, C# e Python passaram pela auditoria principal. C# já foi integrado à `main`; a auditoria Python está concluída na branch `feat/python-audit`, aguardando Pull Request e merge. Ruby, SQL, Dart e PHP ainda precisam de auditoria. O repositório permanece em desenvolvimento e não é uma distribuição pronta para todos os ambientes.
 
 ---
 
@@ -45,6 +46,8 @@ Contém as definições e integrações dos plugins que complementam o LazyVim.
 
 A proposta é manter os projetos do usuário separados da configuração do editor. Não é necessário copiar os módulos Lua para cada novo projeto.
 
+As funcionalidades compartilhadas continuam globais, enquanto as particularidades de execução, depuração e gerenciamento de projetos permanecem nos módulos de cada linguagem.
+
 ---
 
 # 🌐 Linguagens suportadas e andamento
@@ -56,14 +59,16 @@ A proposta é manter os projetos do usuário separados da configuração do edit
 | **Kotlin** | ✅ Auditoria principal concluída | Gradle, LSP, execução e depuração |
 | **C++** | ✅ Auditoria principal concluída | Clangd, CMake, compilação e CodeLLDB |
 | **Go** | ✅ Auditoria principal concluída | Gopls, Delve, módulos e gerador de projetos |
-| **C#** | ⏳ Próxima auditoria | .NET, projetos `.csproj`, F6/F8 e NetCoreDbg |
-| **Python** | ⏳ Pendente | Ambientes virtuais, Pyright, Ruff e debugpy |
-| **Ruby** | ⏳ Pendente | Ruby LSP/Solargraph, Bundler e RuboCop |
+| **C#** | ✅ Auditoria concluída e integrada | .NET, projetos `.csproj`, LSP, F6/F8 e NetCoreDbg |
+| **Python** | ✅ Auditoria concluída na branch M07 | Ambientes virtuais, Pyright, Ruff, debugpy e PythonMenu |
+| **Ruby** | ⏳ Próxima auditoria | Ruby LSP/Solargraph, Bundler e RuboCop |
 | **SQL** | ⏳ Pendente | LSP, execução de scripts e conexões |
 | **Dart** | ⏳ Pendente | Dart Analysis Server e depuração |
 | **PHP** | ⏳ Pendente | PHP, Composer, LSP e Xdebug |
 
-**Progresso da auditoria por linguagem: 5/11 (45,5%).** Uma linguagem marcada como concluída passou pelos testes principais, mas ainda poderá receber melhorias na revisão geral e na fase de frameworks.
+**Progresso das auditorias principais: 7/11 (63,6%).**
+
+Uma linguagem marcada como concluída passou pelos testes principais, mas ainda poderá receber melhorias na revisão geral, na fase de frameworks e nos testes de regressão finais.
 
 ---
 
@@ -143,6 +148,107 @@ O Go passou por testes tanto dentro da pasta habitual de projetos quanto em um d
 
 ---
 
+# 🟢 C#
+
+A auditoria do C# foi concluída na **M06** e integrada à branch principal por meio de Pull Request.
+
+A configuração foi revisada para trabalhar com projetos **.NET**, incluindo arquivos `.csproj`, execução contextual e depuração.
+
+**Recursos verificados:**
+
+- Integração com o ambiente .NET e recursos de linguagem.
+- Reconhecimento de projetos e arquivos C#.
+- Execução contextual pelo **F6**.
+- Depuração pelo **F8** com NetCoreDbg.
+- Breakpoints pelo **F5**.
+- Menu contextual C# e integração com `:Atalhos`.
+- Testes de funcionamento em projetos independentes.
+
+A execução deve considerar o arquivo e o projeto atuais, sem reutilizar acidentalmente um projeto aberto anteriormente.
+
+O objetivo é permitir trabalhar com diferentes projetos .NET sem manter caminhos absolutos específicos da máquina nas configurações versionadas.
+
+---
+
+# 🐍 Python
+
+A auditoria principal do Python foi concluída na **M07**, desenvolvida na branch `feat/python-audit` e vinculada à **Issue #3**.
+
+A configuração combina o extra oficial `lazyvim.plugins.extras.lang.python` com módulos próprios de execução, depuração, menu e atalhos contextuais.
+
+**Recursos verificados:**
+
+- Pyright e Ruff configurados pelo extra oficial do LazyVim.
+- Autocomplete, autoimport e diagnósticos de linguagem.
+- Diagnósticos inline, incluindo atualização durante a digitação.
+- Execução do arquivo atual pelo **F6**.
+- Depuração pelo **F8** com `nvim-dap` e `debugpy`.
+- Breakpoints pelo **F5**.
+- Identificação da raiz do projeto a partir de arquivos relevantes.
+- Reconhecimento de ambientes `.venv` e `venv`.
+- Fallback para o Python disponível no `PATH`, incluindo gerenciadores como mise.
+- PythonMenu e atalhos específicos do buffer Python.
+- Integração contextual com a central `:Atalhos`.
+- Testes em projetos independentes, incluindo diretórios externos e arquivos em subpastas.
+
+## Execução Python — F6
+
+O módulo `lua/languages/python/runner.lua` identifica o arquivo atual e o contexto do projeto.
+
+Quando encontra um ambiente virtual válido, utiliza seu interpretador. Caso contrário, procura o Python disponível no `PATH`.
+
+A execução ocorre no diretório identificado como raiz do projeto, permitindo utilizar o mesmo Neovim em diferentes pastas.
+
+## Depuração Python — F8
+
+O módulo `lua/languages/python/dap.lua` utiliza o `debugpy` instalado pelo Mason.
+
+Há uma separação entre:
+
+- **Python do adaptador:** utilizado para executar o `debugpy` instalado pelo Mason.
+- **Python do projeto:** utilizado para executar o código que está sendo depurado.
+
+Essa separação evita exigir que cada ambiente virtual contenha uma instalação própria do adaptador.
+
+O depurador também identifica a raiz do projeto e seleciona `.venv`, `venv` ou o interpretador disponível no `PATH`.
+
+## Pyright e Ruff
+
+O extra oficial Python do LazyVim é responsável pela configuração dos servidores.
+
+Uma habilitação manual redundante do Pyright foi removida durante a auditoria.
+
+Após essa simplificação, foram confirmados:
+
+- Um cliente Pyright e um cliente Ruff associados ao buffer testado.
+- Diagnósticos de importação não utilizada pelo Ruff.
+- Diagnósticos de incompatibilidade de tipos pelo Pyright.
+- Autocomplete de métodos Python.
+
+A configuração de diagnósticos inline é compartilhada com as demais linguagens compatíveis.
+
+## PythonMenu
+
+O menu pode ser aberto com:
+
+```vim
+:PythonMenu
+```
+
+Ou, dentro de um buffer Python, com:
+
+```text
+Espaço + p + m
+```
+
+O menu reúne opções para executar o arquivo atual, iniciar a depuração e consultar informações do interpretador e do projeto.
+
+O atalho é local ao buffer Python. Seu isolamento foi testado com um buffer C++, no qual o mapeamento não estava registrado.
+
+A central `:Atalhos` também mostra a seção Python somente quando aberta a partir de um buffer Python.
+
+---
+
 # ⌨️ Atalhos principais
 
 | Atalho / comando | Finalidade |
@@ -155,29 +261,45 @@ O Go passou por testes tanto dentro da pasta habitual de projetos quanto em um d
 | `Espaço + u A` | Abrir a central de atalhos |
 | `:GoMenu` | Abrir o menu do Go |
 | `Espaço + g m` | Abrir o GoMenu em buffers Go |
+| `Espaço + c m` | Abrir o menu contextual C# |
+| `:PythonMenu` | Abrir o menu do Python |
+| `Espaço + p m` | Abrir o PythonMenu em buffers Python |
 | `:Temas` | Abrir o seletor de temas |
 
-**Observação:** alguns atalhos são contextuais e só aparecem ou funcionam em determinadas linguagens. As linguagens pendentes ainda passarão pela auditoria de F6, F8 e menus.
+**Observação:** alguns atalhos são contextuais e só aparecem ou funcionam em determinadas linguagens.
+
+A central `:Atalhos` apresenta os comandos globais e acrescenta as seções específicas de acordo com o buffer de origem.
+
+As linguagens ainda pendentes passarão pela auditoria de execução, depuração e menus.
 
 ---
 
 # 🔍 LSP, autocomplete e diagnósticos
 
-A configuração combina os recursos de linguagem do LazyVim com módulos próprios. Entre as ferramentas já utilizadas ou previstas na auditoria estão:
+A configuração combina os recursos de linguagem do LazyVim com módulos próprios.
+
+Entre as ferramentas utilizadas ou previstas estão:
 
 - **Rust:** Rust Analyzer.
 - **Java:** JDTLS.
 - **C++:** Clangd.
 - **Go:** Gopls.
-- **Python:** Pyright e Ruff — revisão pendente.
+- **C#:** integração LSP do ambiente .NET.
+- **Python:** Pyright e Ruff, ambos verificados na auditoria M07.
 - **Ruby:** Ruby LSP ou Solargraph, além de RuboCop — revisão pendente.
-- **C#:** revisão do servidor de linguagem e da integração .NET pendente.
+- **Kotlin, SQL, Dart e PHP:** integrações específicas de cada linguagem, conforme suas etapas de auditoria.
 
-O objetivo é manter autocomplete, navegação, diagnósticos e imports coerentes com o projeto aberto. Recursos como auto-import e atualização de diagnósticos durante a digitação dependem do servidor e da linguagem.
+O objetivo é manter autocomplete, navegação, diagnósticos e imports coerentes com o projeto aberto.
+
+A configuração global de diagnósticos também permite atualizações durante o modo de inserção. A disponibilidade e a precisão dos diagnósticos continuam dependendo do servidor e da linguagem.
 
 ### Desempenho do Ruby e Solargraph
 
-Na futura auditoria do Ruby, será verificado qual LSP está realmente ativo e como ocorre a indexação dos projetos. Se o Solargraph estiver em uso, serão avaliados `include`, `exclude` e `max_files: 5000`, sem sobrescrever configurações existentes. Um `.solargraph.yml` será criado **somente se necessário**.
+Na futura auditoria do Ruby, será verificado qual LSP está realmente ativo e como ocorre a indexação dos projetos.
+
+Se o Solargraph estiver em uso, serão avaliados `include`, `exclude` e `max_files: 5000`, sem sobrescrever configurações existentes.
+
+Um `.solargraph.yml` será criado **somente se necessário**.
 
 ---
 
@@ -188,20 +310,28 @@ Os menus e geradores específicos de linguagens têm como objetivo permitir cria
 O funcionamento desejado é:
 
 1. Identificar o arquivo e a linguagem do buffer atual.
-2. Descobrir a raiz do projeto usando arquivos relevantes, como `go.mod`, `Cargo.toml`, `pom.xml`, `build.gradle` ou `CMakeLists.txt`.
-3. Selecionar o programa ou pacote correto quando houver mais de um candidato.
+2. Descobrir a raiz do projeto usando arquivos relevantes, como `go.mod`, `Cargo.toml`, `pom.xml`, `build.gradle`, `CMakeLists.txt`, `.csproj` ou `pyproject.toml`.
+3. Selecionar o programa, arquivo ou pacote correto quando houver mais de um candidato.
 4. Executar ou depurar no contexto correto, sem reutilizar acidentalmente o projeto anterior.
 5. Permitir projetos localizados fora das pastas habituais de desenvolvimento.
 
-Os mecanismos exatos variam por linguagem. O suporte às seis linguagens pendentes ainda será validado.
+Os mecanismos exatos variam por linguagem.
+
+No Python, por exemplo, o F6 e o F8 identificam o interpretador e a raiz do projeto. No C#, os módulos trabalham com o contexto dos arquivos e projetos .NET.
+
+O suporte às quatro linguagens restantes ainda será validado.
 
 ---
 
 # 🐙 Desenvolvimento com Git e GitHub
 
-O projeto utiliza um fluxo incremental de versionamento. O repositório Git local já foi inicializado na branch `main`; a organização de commits e a publicação no GitHub fazem parte da etapa atual.
+O projeto utiliza um fluxo incremental de versionamento, com branch `main` protegida e desenvolvimento organizado por Issues e Pull Requests.
 
-### Fluxo planejado
+**Repositório:**
+
+[RichardKBO/neovim-lazyvim-config](https://github.com/RichardKBO/neovim-lazyvim-config)
+
+### Fluxo adotado
 
 ```text
 Issue
@@ -210,7 +340,7 @@ Branch da tarefa ou linguagem
   ↓
 Implementação e testes
   ↓
-Commit
+Commits
   ↓
 Push da branch
   ↓
@@ -229,6 +359,14 @@ Cada etapa deverá seguir estas regras:
 - Fazer testes reais no Neovim antes dos commits.
 - Evitar versionar credenciais, caches, dependências instaladas ou arquivos de backup.
 - Manter o `lazy-lock.json` versionado para registrar as revisões dos plugins.
+- Revisar as alterações antes de integrá-las à `main`.
+
+### Auditorias registradas
+
+- **M06 — C#:** auditoria concluída e integrada por Pull Request.
+- **M07 — Python:** Issue #3, branch `feat/python-audit`, com execução, depuração, LSP, diagnósticos e PythonMenu revisados.
+
+A documentação acompanha o avanço do projeto, sem considerar uma branch ainda não integrada como parte da versão estável da `main`.
 
 ---
 
@@ -243,22 +381,32 @@ Cada etapa deverá seguir estas regras:
 
 Esta configuração está sendo desenvolvida e testada no **Linux Mint**. O funcionamento em outros sistemas ainda requer validação.
 
-## Instalação futura a partir do GitHub
+## Instalação a partir do GitHub
 
-Quando o repositório estiver publicado, a instalação poderá seguir este procedimento, usando a **URL real do projeto**:
+Antes de instalar, faça backup de qualquer configuração existente do Neovim.
+
+Para uma instalação nova, o procedimento básico é:
 
 ```bash
-# Faça backup de uma configuração existente antes de substituí-la.
-# Clone o repositório em ~/.config/nvim:
-git clone <URL_DO_REPOSITORIO> ~/.config/nvim
+git clone https://github.com/RichardKBO/neovim-lazyvim-config.git ~/.config/nvim
 
-# Inicie o editor:
 nvim
 ```
 
-Depois da inicialização, utilize `:Lazy sync` para sincronizar os plugins e `:Mason` para verificar ou instalar ferramentas de linguagem. Alguns SDKs e debuggers precisam ser instalados pelo gerenciador de pacotes do sistema ou por ferramentas próprias.
+Depois da inicialização, utilize:
+
+```vim
+:Lazy sync
+:Mason
+```
+
+O primeiro comando permite sincronizar os plugins. O segundo abre o gerenciador de ferramentas de linguagem.
+
+Alguns SDKs e debuggers precisam ser instalados pelo gerenciador de pacotes do sistema ou por ferramentas próprias.
 
 **Importante:** os plugins, os servidores LSP e os debuggers não fazem parte dos arquivos versionados. A configuração ainda não oferece um instalador totalmente automático para todas as linguagens.
+
+O procedimento de instalação será revisado novamente durante a fase de portabilidade e publicação estável.
 
 ---
 
@@ -293,14 +441,27 @@ nvim/
     │   ├── go/
     │   ├── csharp/
     │   ├── python/
+    │   │   ├── dap.lua
+    │   │   ├── init.lua
+    │   │   ├── keymaps.lua
+    │   │   ├── menu.lua
+    │   │   ├── runner.lua
+    │   │   └── snacks.lua
     │   ├── ruby/
     │   ├── sql/
     │   └── cmake/
     │
     └── plugins/
+        ├── diagnostics.lua
+        ├── python-dap.lua
+        └── python.lua
 ```
 
-**Nota:** a árvore acima mostra os diretórios existentes na etapa atual, não significa que todos já estejam auditados. Diretórios vazios, como `after/`, não são necessariamente registrados pelo Git.
+**Nota:** a árvore apresenta os diretórios principais e uma seleção de arquivos relevantes, não uma listagem completa.
+
+Os arquivos Python exibidos correspondem aos módulos utilizados na auditoria M07. O diretório `plugins/` contém outros arquivos não representados nessa visão resumida.
+
+Diretórios vazios, como `after/`, não são necessariamente registrados pelo Git.
 
 ---
 
@@ -311,10 +472,10 @@ nvim/
 - [x] Inicializar o repositório local na branch `main`.
 - [x] Configurar exclusões básicas de backups e preferências locais.
 - [x] Inspecionar os arquivos candidatos ao primeiro commit.
-- [ ] Finalizar e revisar este README.
-- [ ] Conferir informações pessoais e segredos antes da publicação.
-- [ ] Preparar o primeiro commit-base.
-- [ ] Configurar o remoto GitHub e o fluxo de Issues, branches e Pull Requests.
+- [x] Preparar o primeiro commit-base.
+- [x] Configurar o remoto GitHub e o fluxo de Issues, branches e Pull Requests.
+- [ ] Concluir a atualização e revisão contínua do README.
+- [ ] Finalizar a verificação de informações pessoais e segredos antes da publicação estável.
 
 ## Fase 1 — Auditoria das linguagens
 
@@ -323,8 +484,8 @@ nvim/
 - [x] Kotlin.
 - [x] C++.
 - [x] Go.
-- [ ] C#.
-- [ ] Python.
+- [x] C#.
+- [x] Python — auditoria M07 concluída, integração à `main` pendente.
 - [ ] Ruby, incluindo desempenho de indexação do Solargraph, se utilizado.
 - [ ] SQL.
 - [ ] Dart.
@@ -363,9 +524,19 @@ nvim/
 
 # 📊 Status do projeto
 
-**Em desenvolvimento — 5 de 11 linguagens com auditoria principal concluída.**
+**Em desenvolvimento — 7 de 11 linguagens com auditoria principal concluída (63,6%).**
 
-O projeto evolui gradualmente. A conclusão das cinco primeiras linguagens não significa que toda a configuração já tenha passado por uma auditoria global de plugins, segurança, compatibilidade e desempenho.
+As auditorias principais concluídas são:
+
+**Rust · Java · Kotlin · C++ · Go · C# · Python**
+
+O Python aguarda integração à `main` por meio do Pull Request da Issue #3.
+
+**Próxima etapa: M08 — Ruby.**
+
+A conclusão das sete auditorias não significa que toda a configuração já tenha passado por revisão global de plugins, segurança, compatibilidade, desempenho e portabilidade.
+
+Essas verificações continuam previstas no roadmap.
 
 ---
 
@@ -382,7 +553,7 @@ Configuração desenvolvida para estudo, prática de programação e aprimoramen
 
 # 📜 Licença
 
-Consulte o arquivo [LICENSE](LICENSE) presente no repositório. A identificação e compatibilidade da licença serão verificadas antes da publicação.
+Consulte o arquivo [LICENSE](LICENSE) presente no repositório. A identificação e compatibilidade da licença serão verificadas antes da publicação estável.
 
 ---
 
