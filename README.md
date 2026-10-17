@@ -4,14 +4,14 @@
 ![Neovim](https://img.shields.io/badge/Editor-Neovim-57A143)
 ![LazyVim](https://img.shields.io/badge/Base-LazyVim-7C3AED)
 ![Lua](https://img.shields.io/badge/Configura%C3%A7%C3%A3o-Lua-2C2D72)
-![Linguagens](https://img.shields.io/badge/Linguagens-7%2F11_auditadas-blue)
+![Linguagens](https://img.shields.io/badge/Linguagens-8%2F11_auditadas-blue)
 ![Status](https://img.shields.io/badge/Status-Em_desenvolvimento-orange)
 
 Configuração pessoal de **Neovim com LazyVim**, organizada em módulos por linguagem para criar um ambiente de desenvolvimento semelhante a uma IDE, com **LSP, autocomplete, diagnósticos, execução, depuração, menus e gerenciamento de projetos**.
 
 O desenvolvimento é incremental. As alterações são acompanhadas com **Issues, branches, commits e Pull Requests**, depois de testes e revisão.
 
-> **Estado atual:** Rust, Java, Kotlin, C++, Go, C# e Python passaram pela auditoria principal. C# já foi integrado à `main`; a auditoria Python está concluída na branch `feat/python-audit`, aguardando Pull Request e merge. Ruby, SQL, Dart e PHP ainda precisam de auditoria. O repositório permanece em desenvolvimento e não é uma distribuição pronta para todos os ambientes.
+> **Estado atual:** Rust, Java, Kotlin, C++, Go, C#, Python e Ruby concluíram suas auditorias principais e estão integrados à `main` local. A M09 — PHP está em andamento na branch `feat/php-audit` (Issue #7). SQL e Dart permanecem pendentes. O projeto continua em desenvolvimento.
 
 ---
 
@@ -60,13 +60,13 @@ As funcionalidades compartilhadas continuam globais, enquanto as particularidade
 | **C++** | ✅ Auditoria principal concluída | Clangd, CMake, compilação e CodeLLDB |
 | **Go** | ✅ Auditoria principal concluída | Gopls, Delve, módulos e gerador de projetos |
 | **C#** | ✅ Auditoria concluída e integrada | .NET, projetos `.csproj`, LSP, F6/F8 e NetCoreDbg |
-| **Python** | ✅ Auditoria concluída na branch M07 | Ambientes virtuais, Pyright, Ruff, debugpy e PythonMenu |
-| **Ruby** | ⏳ Próxima auditoria | Ruby LSP/Solargraph, Bundler e RuboCop |
+| **Python** | ✅ Auditoria concluída e integrada | Ambientes virtuais, Pyright, Ruff, debugpy e PythonMenu |
+| **Ruby** | ✅ Auditoria concluída e integrada | Solargraph, Bundler, RuboCop, F6/F8 e RubyMenu |
+| **PHP** | 🚧 Auditoria M09 em andamento | Intelephense, Composer, F6/F8, Xdebug e PHPMenu |
 | **SQL** | ⏳ Pendente | LSP, execução de scripts e conexões |
 | **Dart** | ⏳ Pendente | Dart Analysis Server e depuração |
-| **PHP** | ⏳ Pendente | PHP, Composer, LSP e Xdebug |
 
-**Progresso das auditorias principais: 7/11 (63,6%).**
+**Progresso das auditorias principais: 8/11 (72,7%).**
 
 Uma linguagem marcada como concluída passou pelos testes principais, mas ainda poderá receber melhorias na revisão geral, na fase de frameworks e nos testes de regressão finais.
 
@@ -249,6 +249,28 @@ A central `:Atalhos` também mostra a seção Python somente quando aberta a par
 
 ---
 
+# 🐘 PHP — M09 (em andamento)
+
+**Issue #7 — Branch `feat/php-audit`.**
+
+## Recursos testados
+
+- Intelephense, Blink, diagnósticos inline, `gd` e `gr`.
+- Composer PSR-4, namespaces, interfaces e herança.
+- F6 executando o arquivo atual com validação de sintaxe.
+- F8 com Xdebug, breakpoints e depuração CLI entre arquivos.
+- PHPMenu, atalho `Espaço + p h` e central `:Atalhos`.
+- Testes independentes com polimorfismo e múltiplas classes.
+
+## Funcionalidades pendentes
+
+- Servidor HTTP e depuração de requisições web.
+- F6 inteligente com seleção de pontos de entrada.
+- Geração de projetos Composer e ferramentas de formatação.
+- Refinamento futuro da experiência visual semelhante ao PhpStorm.
+
+---
+
 # ⌨️ Atalhos principais
 
 | Atalho / comando | Finalidade |
@@ -264,6 +286,8 @@ A central `:Atalhos` também mostra a seção Python somente quando aberta a par
 | `Espaço + c m` | Abrir o menu contextual C# |
 | `:PythonMenu` | Abrir o menu do Python |
 | `Espaço + p m` | Abrir o PythonMenu em buffers Python |
+| `:PHPMenu` | Abrir menu contextual de ações PHP e Composer |
+| `Espaço + p h` | Abrir PHPMenu em buffers PHP |
 | `:Temas` | Abrir o seletor de temas |
 
 **Observação:** alguns atalhos são contextuais e só aparecem ou funcionam em determinadas linguagens.
@@ -286,20 +310,22 @@ Entre as ferramentas utilizadas ou previstas estão:
 - **Go:** Gopls.
 - **C#:** integração LSP do ambiente .NET.
 - **Python:** Pyright e Ruff, ambos verificados na auditoria M07.
-- **Ruby:** Ruby LSP ou Solargraph, além de RuboCop — revisão pendente.
-- **Kotlin, SQL, Dart e PHP:** integrações específicas de cada linguagem, conforme suas etapas de auditoria.
+- **Ruby:** Solargraph e RuboCop, revisados na M08.
+- **Kotlin:** integração LSP e Gradle revisada na M03.
+- **PHP:** Intelephense validado na M09.
+- **SQL e Dart:** auditorias previstas para M10 e M11.
 
 O objetivo é manter autocomplete, navegação, diagnósticos e imports coerentes com o projeto aberto.
 
 A configuração global de diagnósticos também permite atualizações durante o modo de inserção. A disponibilidade e a precisão dos diagnósticos continuam dependendo do servidor e da linguagem.
 
-### Desempenho do Ruby e Solargraph
+### Solargraph e RuboCop — M08
 
-Na futura auditoria do Ruby, será verificado qual LSP está realmente ativo e como ocorre a indexação dos projetos.
+A auditoria Ruby M08 foi concluída e integrada a `main`
+pelo Pull Request #6.
 
-Se o Solargraph estiver em uso, serão avaliados `include`, `exclude` e `max_files: 5000`, sem sobrescrever configurações existentes.
-
-Um `.solargraph.yml` será criado **somente se necessário**.
+Foram revisados Solargraph, RuboCop, Bundler, execução F6,
+depuração F8, RubyMenu e gerenciamento de projetos.
 
 ---
 
@@ -319,7 +345,7 @@ Os mecanismos exatos variam por linguagem.
 
 No Python, por exemplo, o F6 e o F8 identificam o interpretador e a raiz do projeto. No C#, os módulos trabalham com o contexto dos arquivos e projetos .NET.
 
-O suporte às quatro linguagens restantes ainda será validado.
+O PHP está em auditoria; SQL e Dart permanecem pendentes.
 
 ---
 
@@ -363,10 +389,13 @@ Cada etapa deverá seguir estas regras:
 
 ### Auditorias registradas
 
-- **M06 — C#:** auditoria concluída e integrada por Pull Request.
-- **M07 — Python:** Issue #3, branch `feat/python-audit`, com execução, depuração, LSP, diagnósticos e PythonMenu revisados.
+- **M06 — C#:** concluída e integrada à `main` (PR #2).
+- **M07 — Python:** concluída e integrada à `main` (PR #4).
+- **M08 — Ruby:** concluída e integrada à `main` (PR #6).
+- **M09 — PHP:** em andamento na `feat/php-audit` (Issue #7).
 
-A documentação acompanha o avanço do projeto, sem considerar uma branch ainda não integrada como parte da versão estável da `main`.
+A `main` local contém as auditorias M01 a M08.
+O PHP permanece na branch de desenvolvimento, sem merge.
 
 ---
 
@@ -479,17 +508,27 @@ Diretórios vazios, como `after/`, não são necessariamente registrados pelo Gi
 
 ## Fase 1 — Auditoria das linguagens
 
-- [x] Rust.
-- [x] Java.
-- [x] Kotlin.
-- [x] C++.
-- [x] Go.
-- [x] C#.
-- [x] Python — auditoria M07 concluída, integração à `main` pendente.
-- [ ] Ruby, incluindo desempenho de indexação do Solargraph, se utilizado.
-- [ ] SQL.
-- [ ] Dart.
-- [ ] PHP.
+- [x] M01 — Rust.
+- [x] M02 — Java.
+- [x] M03 — Kotlin.
+- [x] M04 — C++.
+- [x] M05 — Go.
+- [x] M06 — C#.
+- [x] M07 — Python.
+- [x] M08 — Ruby.
+- [ ] M09 — PHP (Issue #7, em andamento).
+- [ ] M10 — SQL.
+- [ ] M11 — Dart.
+
+### Expansão futura — tecnologias adicionais
+
+- [ ] Swift.
+- [ ] JavaScript e TypeScript.
+- [ ] HTML e CSS: LSP, formatação e validação.
+
+Essas tecnologias serão planejadas após o ciclo M01–M11,
+sem numeração definitiva neste momento.
+Não integram o contador original de 11 auditorias.
 
 ## Fase 2 — Formatação BSD/Allman
 
@@ -499,44 +538,75 @@ Diretórios vazios, como `after/`, não são necessariamente registrados pelo Gi
 
 ## Fase 3 — Frameworks e ecossistemas
 
-- [ ] Avaliar integrações com ASP.NET Core, Spring Boot, Ktor, Axum, FastAPI, Django, Rails, Laravel, Flutter e outros frameworks relevantes.
-- [ ] Integrar execução, depuração, testes e gerenciamento de projetos conforme as ferramentas escolhidas.
+- [ ] Go — Gin.
+- [ ] Rust — Axum.
+- [ ] Java — Spring Boot.
+- [ ] Kotlin — Ktor.
+- [ ] PHP — Laravel.
+- [ ] Ruby — Rails.
+- [ ] Python — FastAPI.
+- [ ] C# — ASP.NET Core.
+- [ ] Swift — Vapor.
+
+Instalar e auditar gradualmente, conforme a necessidade.
+Verificar primeiro as ferramentas já presentes no sistema,
+especialmente o suporte ASP.NET Core do SDK .NET.
+
+C++ permanece suportado. Dart e JavaScript/TypeScript
+terão auditorias futuras, sem frameworks nesta fase.
 
 ## Fase 4 — Interface
 
 - [ ] Refinar lualine, informações de projeto e indicadores de LSP.
 - [ ] Padronizar menus, notificações e a central `:Atalhos`.
 
-## Fase 5 — Auditoria geral
+## Fase 5 — Auditoria e refinamento global
 
-- [ ] Revisar módulos Lua, plugins, conflitos de atalhos, autocmds e desempenho.
-- [ ] Executar testes de regressão nas 11 linguagens.
-- [ ] Remover código obsoleto e dependências desnecessárias com segurança.
+- [ ] Revisar módulos Lua, plugins, atalhos e autocmds.
+- [ ] Refinar desempenho, menus e integração entre linguagens.
+- [ ] Remover código obsoleto com segurança.
 
-## Fase 6 — Portabilidade e publicação estável
+## Fase 6 — Portabilidade
 
-- [ ] Documentar requisitos e procedimentos de instalação.
-- [ ] Verificar caminhos locais e possíveis informações sensíveis.
-- [ ] Validar uma instalação limpa quando possível.
+- [ ] Documentar requisitos e instalação.
+- [ ] Revisar caminhos locais e informações sensíveis.
+- [ ] Validar instalação limpa em outro ambiente.
+
+## Fase 7 — Infraestrutura global de testes
+
+- [ ] Definir testes automatizados para módulos Lua.
+- [ ] Criar testes de regressão para os recursos principais.
+- [ ] Validar integração entre linguagens, F6, F8 e menus.
+- [ ] Preparar execução reproduzível dos testes.
+
+## Fase 8 — Publicação estável
+
+- [ ] Revisar a documentação final.
+- [ ] Confirmar os testes e requisitos de portabilidade.
 - [ ] Publicar uma versão estável e reproduzível.
 
 ---
 
 # 📊 Status do projeto
 
-**Em desenvolvimento — 7 de 11 linguagens com auditoria principal concluída (63,6%).**
+**Em desenvolvimento — 8/11 auditorias principais concluídas (72,7%).**
 
-As auditorias principais concluídas são:
+**Concluídas:** Rust, Java, Kotlin, C++, Go, C#, Python e Ruby.
 
-**Rust · Java · Kotlin · C++ · Go · C# · Python**
+**M09 — PHP:** em andamento na branch `feat/php-audit`,
+vinculada à Issue #7.
 
-O Python aguarda integração à `main` por meio do Pull Request da Issue #3.
+Já testados: Intelephense, Blink, diagnósticos, F6,
+Xdebug/F8 para CLI, Composer PSR-4 e PHPMenu.
 
-**Próxima etapa: M08 — Ruby.**
+Pendentes: servidor HTTP integrado, depuração web,
+seleção inteligente de pontos de entrada e geradores Composer.
 
-A conclusão das sete auditorias não significa que toda a configuração já tenha passado por revisão global de plugins, segurança, compatibilidade, desempenho e portabilidade.
+**Próximas auditorias:** M10 — SQL e M11 — Dart.
 
-Essas verificações continuam previstas no roadmap.
+Após as linguagens: frameworks, refinamento da interface,
+auditoria global, portabilidade e infraestrutura de testes,
+seguidas da publicação estável.
 
 ---
 
