@@ -260,11 +260,12 @@ A central `:Atalhos` também mostra a seção Python somente quando aberta a par
 - F6 executando o arquivo atual com validação de sintaxe.
 - F8 com Xdebug, breakpoints e depuração CLI entre arquivos.
 - PHPMenu, atalho `Espaço + p h` e central `:Atalhos`.
+- Servidor HTTP local pelo PHPMenu: iniciar, verificar e parar.
 - Testes independentes com polimorfismo e múltiplas classes.
 
 ## Funcionalidades pendentes
 
-- Servidor HTTP e depuração de requisições web.
+- Depuração de requisições HTTP com Xdebug.
 - F6 inteligente com seleção de pontos de entrada.
 - Geração de projetos Composer e ferramentas de formatação.
 - Refinamento futuro da experiência visual semelhante ao PhpStorm.
@@ -599,7 +600,7 @@ vinculada à Issue #7.
 Já testados: Intelephense, Blink, diagnósticos, F6,
 Xdebug/F8 para CLI, Composer PSR-4 e PHPMenu.
 
-Pendentes: servidor HTTP integrado, depuração web,
+Pendentes: depuração HTTP com Xdebug,
 seleção inteligente de pontos de entrada e geradores Composer.
 
 **Próximas auditorias:** M10 — SQL e M11 — Dart.

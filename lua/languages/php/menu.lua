@@ -160,6 +160,24 @@ function M.abrir()
         validar_composer(arquivo)
       end,
     },
+    {
+      nome = "Iniciar servidor HTTP",
+      executar = function()
+        require("languages.php.server").iniciar(arquivo)
+      end,
+    },
+    {
+      nome = "Verificar servidor HTTP",
+      executar = function()
+        require("languages.php.server").status()
+      end,
+    },
+    {
+      nome = "Parar servidor HTTP",
+      executar = function()
+        require("languages.php.server").parar()
+      end,
+    },
   }
 
   vim.ui.select(opcoes, {
