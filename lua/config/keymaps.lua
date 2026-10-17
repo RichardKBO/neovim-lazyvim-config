@@ -82,6 +82,13 @@ vim.keymap.set("n", "<F8>", function()
     return
   end
 
+  -- PHP - F8 CENTRALIZADO (CLI / HTTP)
+  if filetype == "php" then
+    local arquivo = vim.api.nvim_buf_get_name(0)
+    require("languages.php.dap").depurar(arquivo)
+    return
+  end
+
   dap.continue()
 end, {
   desc = "Iniciar ou continuar debugger",

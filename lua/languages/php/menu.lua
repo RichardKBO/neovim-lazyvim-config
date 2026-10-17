@@ -145,7 +145,7 @@ function M.abrir()
           return
         end
 
-        require("dap").continue()
+        require("languages.php.dap").depurar(arquivo)
       end,
     },
     {
