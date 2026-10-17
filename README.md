@@ -62,7 +62,7 @@ As funcionalidades compartilhadas continuam globais, enquanto as particularidade
 | **C#** | ✅ Auditoria concluída e integrada | .NET, projetos `.csproj`, LSP, F6/F8 e NetCoreDbg |
 | **Python** | ✅ Auditoria concluída e integrada | Ambientes virtuais, Pyright, Ruff, debugpy e PythonMenu |
 | **Ruby** | ✅ Auditoria concluída e integrada | Solargraph, Bundler, RuboCop, F6/F8 e RubyMenu |
-| **PHP** | 🚧 Auditoria M09 em andamento | Intelephense, Composer, F6/F8, Xdebug e PHPMenu |
+| **PHP** | 🚧 Auditoria M09 em andamento | Intelephense, Composer, F6/F8, Xdebug, PHPMenu e Live Server |
 | **SQL** | ⏳ Pendente | LSP, execução de scripts e conexões |
 | **Dart** | ⏳ Pendente | Dart Analysis Server e depuração |
 
@@ -256,17 +256,34 @@ A central `:Atalhos` também mostra a seção Python somente quando aberta a par
 ## Recursos testados
 
 - Intelephense, Blink, diagnósticos inline, `gd` e `gr`.
-- Composer PSR-4, namespaces, interfaces e herança.
-- F6 executando o arquivo atual com validação de sintaxe.
-- F8 com Xdebug, breakpoints e depuração CLI entre arquivos.
-- PHPMenu, atalho `Espaço + p h` e central `:Atalhos`.
-- Servidor HTTP local pelo PHPMenu: iniciar, verificar e parar.
-- Testes independentes com polimorfismo e múltiplas classes.
+- Composer PSR-4, namespaces, interfaces, herança e polimorfismo.
+- F6 para PHP CLI: execução do arquivo atual com validação de sintaxe.
+- F6 para `public/index.php`: inicialização automática do servidor HTTP.
+- Live Server com BrowserSync, proxy na porta `3000` e abertura do navegador padrão.
+- Live Reload: atualização automática do navegador ao salvar arquivos.
+- Troca entre projetos HTTP mediante confirmação.
+- Recuperação do BrowserSync pelo F6 sem reiniciar o servidor PHP.
+- Proteção testada contra conflito na porta `3000`.
+- F8 com Xdebug: depuração CLI e HTTP, breakpoints e continuação.
+- PHPMenu integrado à depuração centralizada em `languages.php.dap`.
+- PHPMenu: iniciar, verificar e parar o servidor HTTP gerenciado.
+- Depuração HTTP com `?XDEBUG_TRIGGER=1`, inclusive pelo BrowserSync.
+- Laboratórios com múltiplas classes e aplicação web utilizando Composer PSR-4.
 
-## Funcionalidades pendentes
+## Ambiente de execução web
 
-- Depuração de requisições HTTP com Xdebug.
-- F6 inteligente com seleção de pontos de entrada.
+- Servidor PHP local: `127.0.0.1:8765`.
+- BrowserSync: `127.0.0.1:3000`.
+- Listener Xdebug: `127.0.0.1:9003`.
+- Dependências: PHP, Xdebug, PHP Debug Adapter, Node.js e BrowserSync.
+- O navegador padrão é aberto automaticamente quando o Live Server inicia.
+
+## Limitações e próximos refinamentos
+
+- A detecção automática F6/F8 para web reconhece `public/index.php`.
+- Outros pontos de entrada e frameworks precisarão de reconhecimento específico.
+- As portas HTTP e BrowserSync ainda são fixas.
+- A depuração HTTP utiliza o gatilho `XDEBUG_TRIGGER=1`.
 - Geração de projetos Composer e ferramentas de formatação.
 - Refinamento futuro da experiência visual semelhante ao PhpStorm.
 
@@ -597,11 +614,13 @@ terão auditorias futuras, sem frameworks nesta fase.
 **M09 — PHP:** em andamento na branch `feat/php-audit`,
 vinculada à Issue #7.
 
-Já testados: Intelephense, Blink, diagnósticos, F6,
-Xdebug/F8 para CLI, Composer PSR-4 e PHPMenu.
+Já testados: Intelephense, Blink, Composer PSR-4,
+F6 para CLI e web, F8/Xdebug para CLI e HTTP, PHPMenu,
+Live Server com BrowserSync, Live Reload, troca entre
+projetos e recuperação após conflito de porta.
 
-Pendentes: depuração HTTP com Xdebug,
-seleção inteligente de pontos de entrada e geradores Composer.
+Pendentes: suporte a outros pontos de entrada,
+geradores Composer, formatação e refinamentos finais.
 
 **Próximas auditorias:** M10 — SQL e M11 — Dart.
 
