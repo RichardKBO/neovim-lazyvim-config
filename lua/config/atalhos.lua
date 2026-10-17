@@ -118,6 +118,13 @@ local function montar_linhas(buffer_origem)
     inserir_secao(linhas, ruby.linhas_ajuda())
   end
 
+  -- PHP.
+  local php = require("languages.php.keymaps")
+
+  if php.eh_contexto_php(buffer_origem) then
+    inserir_secao(linhas, php.linhas_ajuda())
+  end
+
   return linhas
 end
 

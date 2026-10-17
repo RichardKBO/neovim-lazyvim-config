@@ -46,6 +46,10 @@ vim.keymap.set("n", "<F6>", function()
   elseif extensao == "c" or extensao == "cc" or extensao == "cpp" or extensao == "cxx" then
     require("languages.cpp.runner").executar(arquivo)
 
+  -- PHP
+  elseif extensao == "php" then
+    require("languages.php.runner").executar(arquivo)
+
   -- SQL
   elseif extensao == "sql" then
     require("languages.sql.runner").executar(arquivo)
@@ -75,6 +79,13 @@ vim.keymap.set("n", "<F8>", function()
   -- como fallback.
   if filetype == "cpp" or filetype == "c" then
     require("cmake-tools").debug({})
+    return
+  end
+
+  -- PHP - F8 CENTRALIZADO (CLI / HTTP)
+  if filetype == "php" then
+    local arquivo = vim.api.nvim_buf_get_name(0)
+    require("languages.php.dap").depurar(arquivo)
     return
   end
 
