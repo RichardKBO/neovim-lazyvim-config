@@ -80,6 +80,12 @@ require("languages.python.keymaps").setup()
 -- Inicializacao global do Intelephense.
 require("languages.php.lsp").setup()
 
+-- Registrar o comando :PHPMenu.
+require("languages.php.menu").setup()
+
+-- Atalhos contextuais dos buffers PHP.
+require("languages.php.keymaps").setup()
+
 -- ========================================
 -- CMAKE
 -- ========================================
