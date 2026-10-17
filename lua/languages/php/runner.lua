@@ -50,6 +50,15 @@ function M.executar(arquivo)
     return
   end
 
+  -- PHP WEB - F6 AUTOMATICO
+  local diretorio = vim.fs.dirname(arquivo)
+
+  if vim.fs.basename(arquivo) == "index.php"
+      and vim.fs.basename(diretorio) == "public" then
+    require("languages.php.server").iniciar(arquivo)
+    return
+  end
+
   local raiz = encontrar_raiz(arquivo)
 
   -- Passar executavel e arquivo como argumentos.
