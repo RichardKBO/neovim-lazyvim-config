@@ -93,6 +93,13 @@ require("languages.php.keymaps").setup()
 require("languages.cmake.lsp").setup()
 
 -- ========================================
+-- SWIFT
+-- ========================================
+
+-- Inicializacao do SourceKit-LSP oficial.
+require("languages.swift.lsp").setup()
+
+-- ========================================
 -- APARENCIA E CENTRAL DE ATALHOS
 -- ========================================
 
