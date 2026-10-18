@@ -50,6 +50,10 @@ vim.keymap.set("n", "<F6>", function()
   elseif extensao == "php" then
     require("languages.php.runner").executar(arquivo)
 
+  -- Swift
+  elseif extensao == "swift" then
+    require("languages.swift.runner").executar(arquivo)
+
   -- SQL
   elseif extensao == "sql" then
     require("languages.sql.runner").executar(arquivo)
