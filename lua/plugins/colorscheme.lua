@@ -1,11 +1,16 @@
 return {
-  -- Tema padrao temporario
+  -- Tema padrao temporario.
+  -- A preferencia salva em tema-atual.json tem prioridade.
   {
     "LazyVim/LazyVim",
     opts = {
       colorscheme = "retrobox",
     },
   },
+
+  -- ========================================
+  -- TEMAS EXISTENTES
+  -- ========================================
 
   -- Tokyo Night
   {
@@ -15,7 +20,7 @@ return {
     opts = {},
   },
 
-  -- Material Darker / Deep Ocean
+  -- Material
   {
     "marko-cerovac/material.nvim",
     lazy = false,
@@ -77,10 +82,61 @@ return {
     priority = 1000,
   },
 
-  -- Spaceduck: alternativa espacial
+  -- Spaceduck
   {
     "pineapplegiant/spaceduck",
     lazy = false,
     priority = 1000,
+  },
+
+  -- ========================================
+  -- NOVOS TEMAS ESCUROS
+  -- ========================================
+
+  -- Miasma
+  {
+    "xero/miasma.nvim",
+    lazy = false,
+    priority = 1000,
+  },
+
+  -- Melange
+  {
+    "savq/melange-nvim",
+    lazy = false,
+    priority = 1000,
+  },
+
+  -- Kanagawa: Wave e Dragon
+  {
+    "rebelot/kanagawa.nvim",
+    lazy = false,
+    priority = 1000,
+    opts = {},
+  },
+
+  -- Oxocarbon: Dark
+  {
+    "nyoom-engineering/oxocarbon.nvim",
+    lazy = false,
+    priority = 1000,
+    build = false,
+  },
+
+  -- Gruvbox Material
+  {
+    "sainnhe/gruvbox-material",
+    lazy = false,
+    priority = 1000,
+    init = function()
+      -- Contraste padrao
+      vim.g.gruvbox_material_background = "medium"
+
+      -- Paleta padrao
+      vim.g.gruvbox_material_foreground = "material"
+
+      -- Estilo oficial da statusline
+      vim.g.gruvbox_material_statusline_style = "mix"
+    end,
   },
 }
