@@ -1,12 +1,16 @@
 -- ========================================
--- C# - DEBUGGER COM NViM-DAP E NETCOREDBG
+-- C# - DEBUGGER CONTEXTUAL (F8)
+-- NetCoreDbg + executor global compartilhado
 -- ========================================
 
 local M = {}
 
--- Localizar o projeto C# mais proximo do arquivo atual.
-local function localizar_projeto()
-  local arquivo = vim.fn.expand("%:p")
+-- ========================================
+-- PROJETO DO ARQUIVO ATUAL
+-- ========================================
+
+local function localizar_projeto(arquivo)
+  arquivo = arquivo or vim.fn.expand("%:p")
 
   if arquivo == "" then
     error("Nenhum arquivo C# aberto.")
@@ -26,14 +30,24 @@ local function localizar_projeto()
   return vim.fn.fnamemodify(projetos[1], ":p")
 end
 
--- Consultar uma propriedade do projeto pelo MSBuild.
-local function consultar_propriedade(projeto, propriedade)
-  local resultado = vim.fn.system({
+-- ========================================
+-- CONSULTAR MSBUILD
+-- ========================================
+
+local function consultar_propriedade(projeto, propriedade, framework)
+  local comando = {
     "dotnet",
     "msbuild",
     projeto,
+    "-property:Configuration=Debug",
     "-getProperty:" .. propriedade,
-  })
+  }
+
+  if framework and framework ~= "" then
+    table.insert(comando, "-property:TargetFramework=" .. framework)
+  end
+
+  local resultado = vim.fn.system(comando)
 
   if vim.v.shell_error ~= 0 then
     error("Erro ao consultar " .. propriedade .. ":\n" .. resultado)
@@ -42,7 +56,36 @@ local function consultar_propriedade(projeto, propriedade)
   return vim.trim(resultado)
 end
 
--- Verificar se o arquivo esta salvo.
+local function obter_framework(projeto)
+  local framework = consultar_propriedade(projeto, "TargetFramework")
+
+  if framework == "" or framework:find("\n", 1, true) then
+    error(
+      "TargetFramework nao definido ou projeto com multiplos frameworks. " .. "Configure um framework para depurar."
+    )
+  end
+
+  return framework
+end
+
+local function obter_assembly(projeto, framework)
+  local caminho = consultar_propriedade(projeto, "TargetPath", framework)
+
+  if caminho == "" or caminho:find("\n", 1, true) then
+    error("TargetPath invalido ou vazio para o projeto C#.")
+  end
+
+  if not caminho:match("^/") then
+    caminho = vim.fs.joinpath(vim.fs.dirname(projeto), caminho)
+  end
+
+  return vim.fs.normalize(caminho)
+end
+
+-- ========================================
+-- VALIDAR E IDENTIFICAR EXECUTOR
+-- ========================================
+
 local function verificar_arquivo(arquivo)
   if arquivo == "" or vim.fn.filereadable(arquivo) ~= 1 then
     error("Salve o arquivo C# antes de depurar.")
@@ -55,67 +98,117 @@ local function verificar_arquivo(arquivo)
   end
 end
 
--- Identificar uma classe com metodo Executar().
 local function analisar_executor(arquivo)
   if vim.fn.filereadable(arquivo) ~= 1 then
     return nil
   end
 
-  local linhas = vim.fn.readfile(arquivo)
-  local conteudo = table.concat(linhas, "\n")
+  local conteudo = table.concat(vim.fn.readfile(arquivo), "\n")
 
-  local namespace = conteudo:match("namespace%s+([%w_%.]+)%s*[;{]")
-
-  local classe = conteudo:match("public%s+[%a_%s]-class%s+([%a_][%w_]*)")
-
-  local metodo = conteudo:match("public%s+static%s+void%s+Executar%s*%(%s*%)")
-
-  if not namespace or not classe or not metodo then
+  if not conteudo:match("public%s+static%s+void%s+Executar%s*%(%s*%)") then
     return nil
   end
 
-  return namespace .. "." .. classe
+  local classe = conteudo:match("%f[%w]class%s+([%a_][%w_]*)")
+
+  if not classe then
+    return nil
+  end
+
+  local namespace = conteudo:match("namespace%s+([%w_%.]+)%s*[;{]")
+
+  return namespace and (namespace .. "." .. classe) or classe
 end
 
--- Encontrar o executor associado ao arquivo atual.
 local function identificar_executor(arquivo)
   verificar_arquivo(arquivo)
 
-  -- Caso 1: o proprio arquivo possui Executar().
-  local executor = analisar_executor(arquivo)
-
-  if executor then
-    return executor
+  -- Program.cs mantem a execucao convencional.
+  if vim.fn.fnamemodify(arquivo, ":t") == "Program.cs" then
+    return nil
   end
 
-  -- Caso 2: procurar NomeDoArquivoExecutar.cs
-  -- na mesma pasta da classe de logica.
-  local diretorio = vim.fs.dirname(arquivo)
+  -- Primeiro, verificar o proprio arquivo.
+  local classe = analisar_executor(arquivo)
+
+  if classe then
+    return classe
+  end
+
+  -- Depois, procurar o executor correspondente.
   local nome = vim.fn.fnamemodify(arquivo, ":t:r")
 
   if not nome:match("Executar$") then
-    local candidato = diretorio .. "/" .. nome .. "Executar.cs"
+    local candidato = vim.fs.joinpath(vim.fs.dirname(arquivo), nome .. "Executar.cs")
 
-    executor = analisar_executor(candidato)
+    classe = analisar_executor(candidato)
 
-    if executor then
+    if classe then
       verificar_arquivo(candidato)
-      return executor
+      return classe
     end
   end
 
-  error(
-    "Nao foi encontrado um metodo Executar() no arquivo atual "
-      .. "nem um executor associado na mesma pasta: "
-      .. arquivo
+  -- Sem executor direto, depurar o projeto normal.
+  -- Para varios executores, abrir o arquivo *Executar.cs.
+  return nil
+end
+
+-- ========================================
+-- EXECUTOR GLOBAL
+-- ========================================
+
+local function obter_runner_global()
+  return vim.fs.joinpath(
+    vim.fn.stdpath("data"),
+    "csharp-class-runner",
+    "bin",
+    "Debug",
+    "net10.0",
+    "NeovimCSharpRunner.dll"
   )
 end
 
--- Configurar o debugger C#.
+local function usar_runner_global(projeto, classe)
+  if not classe then
+    return false
+  end
+
+  local habilitado = consultar_propriedade(projeto, "EnableClassRunner")
+
+  -- Preservar o dispatcher antigo quando presente.
+  return habilitado:lower() ~= "true"
+end
+
+-- ========================================
+-- COMPILAR O PROJETO
+-- ========================================
+
+local function compilar(projeto, framework)
+  local resultado = vim.fn.system({
+    "dotnet",
+    "build",
+    projeto,
+    "--configuration",
+    "Debug",
+    "--framework",
+    framework,
+    "--nologo",
+  })
+
+  if vim.v.shell_error ~= 0 then
+    error("A compilacao do projeto C# falhou:\n" .. resultado)
+  end
+end
+
+-- ========================================
+-- CONFIGURACAO DO NVIM-DAP
+-- ========================================
+
 function M.setup()
   local dap = require("dap")
 
-  -- Adaptador NetCoreDbg existente.
+  -- Preservar o adaptador NetCoreDbg existente.
   dap.adapters.coreclr = {
     type = "executable",
 
@@ -132,84 +225,78 @@ function M.setup()
       type = "coreclr",
       request = "launch",
 
-      -- Localizar, compilar e obter a DLL do projeto.
+      -- Selecionar a DLL conforme o arquivo aberto.
       program = function()
         local arquivo = vim.fn.expand("%:p")
         verificar_arquivo(arquivo)
 
-        local projeto = localizar_projeto()
-        local diretorio = vim.fs.dirname(projeto)
+        local projeto = localizar_projeto(arquivo)
 
-        local output_type = consultar_propriedade(projeto, "OutputType")
+        local tipo = consultar_propriedade(projeto, "OutputType")
 
-        if output_type ~= "Exe" and output_type ~= "WinExe" then
-          error("O projeto atual nao e executavel. OutputType: " .. output_type)
+        if tipo:lower() ~= "exe" and tipo:lower() ~= "winexe" then
+          error("O projeto atual nao e executavel. OutputType: " .. tipo)
         end
 
-        local framework = consultar_propriedade(projeto, "TargetFramework")
+        local framework = obter_framework(projeto)
+        local classe = identificar_executor(arquivo)
 
-        if framework == "" or framework:find("\n", 1, true) then
-          error("TargetFramework vazio ou com multiplos valores.")
+        -- Gerar DLL e PDB atualizados.
+        compilar(projeto, framework)
+
+        local assembly = obter_assembly(projeto, framework)
+
+        if vim.fn.filereadable(assembly) ~= 1 then
+          error("DLL compilada nao encontrada: " .. assembly)
         end
 
-        local resultado = vim.fn.system({
-          "dotnet",
-          "build",
-          projeto,
-          "--configuration",
-          "Debug",
-          "--framework",
-          framework,
-        })
+        -- Para projetos novos, iniciar o executor global.
+        if usar_runner_global(projeto, classe) then
+          local runner = obter_runner_global()
 
-        if vim.v.shell_error ~= 0 then
-          error("A compilacao do projeto C# falhou:\n" .. resultado)
+          if vim.fn.filereadable(runner) ~= 1 then
+            error("Executor global C# nao encontrado: " .. runner)
+          end
+
+          return runner
         end
 
-        local assembly_name = consultar_propriedade(projeto, "AssemblyName")
-
-        if assembly_name == "" then
-          error("Nao foi possivel identificar o AssemblyName.")
-        end
-
-        local dll = diretorio .. "/bin/Debug/" .. framework .. "/" .. assembly_name .. ".dll"
-
-        if vim.fn.filereadable(dll) ~= 1 then
-          error("DLL compilada nao encontrada: " .. dll)
-        end
-
-        return dll
+        -- Program.cs e projetos antigos usam DLL propria.
+        return assembly
       end,
 
-      -- Definir argumentos conforme o tipo de projeto.
+      -- Argumentos enviados ao assembly depurado.
       args = function()
-        local projeto = localizar_projeto()
-
-        local class_runner = consultar_propriedade(projeto, "EnableClassRunner")
-
-        -- Projetos convencionais nao precisam de dispatcher.
-        if class_runner:lower() ~= "true" then
-          return {}
-        end
-
         local arquivo = vim.fn.expand("%:p")
+        verificar_arquivo(arquivo)
 
-        -- Permitir depurar o Program.cs convencional.
-        if vim.fn.fnamemodify(arquivo, ":t") == "Program.cs" then
+        local projeto = localizar_projeto(arquivo)
+        local classe = identificar_executor(arquivo)
+
+        -- Execucao convencional.
+        if not classe then
           return {}
         end
 
-        -- Encontrar Executar() no proprio arquivo
-        -- ou em um arquivo executor associado.
-        local executor = identificar_executor(arquivo)
+        -- Projeto novo: DLL e classe para o runner global.
+        if usar_runner_global(projeto, classe) then
+          local framework = obter_framework(projeto)
+          local assembly = obter_assembly(projeto, framework)
 
+          return {
+            assembly,
+            classe,
+          }
+        end
+
+        -- Projeto antigo: manter --executar.
         return {
           "--executar",
-          executor,
+          classe,
         }
       end,
 
-      -- Usar o diretorio do projeto identificado.
+      -- Trabalhar a partir da pasta do projeto.
       cwd = function()
         return vim.fs.dirname(localizar_projeto())
       end,

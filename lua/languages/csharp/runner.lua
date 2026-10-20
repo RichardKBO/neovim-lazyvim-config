@@ -1,5 +1,5 @@
 -- ========================================
--- C# - RUNNER DINAMICO (F6)
+-- C# - RUNNER DINAMICO GLOBAL (F6)
 -- ========================================
 
 local M = {}
@@ -22,7 +22,6 @@ end
 local function buscar_projetos(arquivo)
   local pasta = diretorio(arquivo)
 
-  -- Prioridade: projeto mais proximo do arquivo.
   while pasta and pasta ~= "" do
     local projetos = vim.fn.globpath(pasta, "*.csproj", false, true)
 
@@ -40,8 +39,7 @@ local function buscar_projetos(arquivo)
     pasta = pai
   end
 
-  -- Alternativa: procurar projetos dentro de
-  -- uma solucao encontrada na hierarquia.
+  -- Alternativa: procurar na solucao ancestral.
   local solucoes = vim.fs.find(function(nome)
     return nome:match("%.slnx?$") ~= nil
   end, {
@@ -54,9 +52,7 @@ local function buscar_projetos(arquivo)
   end
 
   local raiz = diretorio(solucoes[1])
-
   local encontrados = vim.fn.globpath(raiz, "**/*.csproj", false, true)
-
   local projetos = {}
 
   for _, projeto in ipairs(encontrados) do
@@ -66,6 +62,7 @@ local function buscar_projetos(arquivo)
   end
 
   table.sort(projetos)
+
   return projetos
 end
 
@@ -101,14 +98,10 @@ local function ler_executor(arquivo)
 
   local conteudo = table.concat(vim.fn.readfile(arquivo), "\n")
 
-  -- Compativel com o dispatcher atual:
-  -- public static void Executar()
   if not conteudo:match("public%s+static%s+void%s+Executar%s*%(%s*%)") then
     return nil
   end
 
-  -- Reconhece class, static class e
-  -- declaracoes comuns de classe.
   local classe = conteudo:match("%f[%w]class%s+([%a_][%w_]*)")
 
   if not classe then
@@ -148,15 +141,15 @@ local function listar_executores(arquivo)
     end
   end
 
-  -- Primeiro, verificar o proprio arquivo.
+  -- Prioridade 1: arquivo aberto.
   adicionar(arquivo)
 
   if #candidatos > 0 then
     return candidatos, true
   end
 
-  -- Depois, procurar o executor relacionado:
-  -- Desafio1.cs -> Desafio1Executar.cs
+  -- Prioridade 2: executor correspondente.
+  -- Produto.cs -> ProdutoExecutar.cs
   if not nome:match("Executar$") then
     adicionar(pasta .. "/" .. nome .. "Executar.cs")
   end
@@ -165,7 +158,7 @@ local function listar_executores(arquivo)
     return candidatos, true
   end
 
-  -- Por ultimo, descobrir executores na pasta.
+  -- Prioridade 3: executores da mesma pasta.
   local encontrados = vim.fn.globpath(pasta, "*Executar.cs", false, true)
 
   for _, caminho in ipairs(encontrados) do
@@ -192,7 +185,6 @@ local function abrir_terminal(comando, pasta)
 
     local antigo = vim.api.nvim_win_get_buf(janela)
 
-    -- Interromper somente o job do terminal C#.
     if vim.bo[antigo].buftype == "terminal" then
       local job = vim.b[antigo].terminal_job_id
 
@@ -219,7 +211,6 @@ local function abrir_terminal(comando, pasta)
   vim.bo[buffer].bufhidden = "wipe"
   vim.bo[buffer].swapfile = false
 
-  -- Argumentos em lista: sem concatenacao de shell.
   local job = vim.fn.termopen(comando, {
     cwd = pasta,
   })
@@ -233,7 +224,7 @@ local function abrir_terminal(comando, pasta)
 end
 
 -- ========================================
--- CONSULTAR MSBUILD SEM BLOQUEAR O EDITOR
+-- CONSULTAR PROPRIEDADES DO MSBUILD
 -- ========================================
 
 local function consultar_projeto(projeto, callback)
@@ -250,7 +241,7 @@ local function consultar_projeto(projeto, callback)
   }, function(resultado)
     vim.schedule(function()
       if resultado.code ~= 0 then
-        avisar("C#: erro ao consultar o projeto:\n" .. (resultado.stderr or ""), vim.log.levels.ERROR)
+        avisar("C#: erro ao consultar projeto:\n" .. (resultado.stderr or ""), vim.log.levels.ERROR)
         return
       end
 
@@ -267,7 +258,112 @@ local function consultar_projeto(projeto, callback)
 end
 
 -- ========================================
--- MONTAR COMANDO DE EXECUCAO
+-- CONSULTAR CAMINHO REAL DO ASSEMBLY
+-- ========================================
+
+local function consultar_assembly(projeto, framework, callback)
+  local comando = {
+    "dotnet",
+    "msbuild",
+    projeto,
+    "-property:Configuration=Debug",
+    "-getProperty:TargetPath",
+  }
+
+  if framework and framework ~= "" then
+    table.insert(comando, "-property:TargetFramework=" .. framework)
+  end
+
+  vim.system(comando, {
+    cwd = diretorio(projeto),
+    text = true,
+  }, function(resultado)
+    vim.schedule(function()
+      if resultado.code ~= 0 then
+        avisar("C#: erro ao localizar assembly:\n" .. (resultado.stderr or ""), vim.log.levels.ERROR)
+        return
+      end
+
+      local caminho = vim.trim(resultado.stdout or "")
+
+      if caminho == "" or caminho:find("\n", 1, true) then
+        avisar("C#: TargetPath invalido ou vazio.", vim.log.levels.ERROR)
+        return
+      end
+
+      -- Resolver caminhos relativos ao projeto.
+      if not caminho:match("^/") then
+        caminho = vim.fs.joinpath(diretorio(projeto), caminho)
+      end
+
+      callback(vim.fs.normalize(caminho))
+    end)
+  end)
+end
+
+-- ========================================
+-- EXECUTOR GLOBAL COMPARTILHADO
+-- ========================================
+
+local function obter_runner_global()
+  local caminho =
+    vim.fs.joinpath(vim.fn.stdpath("data"), "csharp-class-runner", "bin", "Debug", "net10.0", "NeovimCSharpRunner.dll")
+
+  return vim.fs.normalize(caminho)
+end
+
+-- ========================================
+-- EXECUTAR CLASSE PELO RUNNER GLOBAL
+-- ========================================
+
+local function executar_classe_global(projeto, framework, classe, chamada)
+  local runner = obter_runner_global()
+
+  if vim.fn.filereadable(runner) ~= 1 then
+    avisar("C#: executor global nao encontrado:\n" .. runner, vim.log.levels.ERROR)
+    return
+  end
+
+  consultar_assembly(projeto, framework, function(assembly)
+    -- Evitar execucoes antigas apos outro F6.
+    if chamada ~= ultima_execucao then
+      return
+    end
+
+    -- Compilar sempre antes da execucao.
+    -- Argumentos posicionais evitam problemas
+    -- com espacos e metacaracteres em caminhos.
+    local script = [[
+if [ -n "$5" ]; then
+  dotnet build "$1" --configuration Debug --framework "$5" --nologo
+else
+  dotnet build "$1" --configuration Debug --nologo
+fi || exit $?
+
+exec dotnet "$2" "$3" "$4"
+]]
+
+    local comando = {
+      "sh",
+      "-c",
+      script,
+      "neovim-csharp-runner",
+      projeto,
+      runner,
+      assembly,
+      classe,
+      framework or "",
+    }
+
+    avisar("C#: executando " .. classe)
+
+    abrir_terminal(comando, diretorio(projeto))
+  end)
+end
+
+-- ========================================
+-- EXECUCAO CONVENCIONAL DO DOTNET
+-- E COMPATIBILIDADE COM DISPATCHER ANTIGO
 -- ========================================
 
 local function criar_comando(projeto, propriedades, framework, classe)
@@ -321,8 +417,8 @@ local function criar_comando(projeto, propriedades, framework, classe)
     table.insert(comando, framework)
   end
 
-  -- Argumentos do dispatcher sao enviados
-  -- somente quando ele foi selecionado.
+  -- Compatibilidade com projetos antigos
+  -- que usam DesafioRunner e --executar.
   if classe and not testes and tipo ~= "library" then
     table.insert(comando, "--")
     table.insert(comando, "--executar")
@@ -333,29 +429,44 @@ local function criar_comando(projeto, propriedades, framework, classe)
 end
 
 -- ========================================
--- SELECIONAR MODO DE EXECUCAO
+-- SELECIONAR EXECUCAO
 -- ========================================
 
-local function escolher_execucao(arquivo, projeto, propriedades, framework)
-  local function executar(classe)
-    criar_comando(projeto, propriedades, framework, classe)
-  end
-
-  local habilitado = (tostring(propriedades.EnableClassRunner):lower() == "true")
+local function escolher_execucao(arquivo, projeto, propriedades, framework, chamada)
+  local legado = (tostring(propriedades.EnableClassRunner):lower() == "true")
 
   local testes = (tostring(propriedades.IsTestProject):lower() == "true")
 
   local biblioteca = (tostring(propriedades.OutputType or ""):lower() == "library")
 
-  -- Bibliotecas e testes seguem seu proprio modo.
-  if testes or biblioteca or not habilitado then
+  local function executar(classe)
+    if chamada ~= ultima_execucao then
+      return
+    end
+
+    -- Testes, bibliotecas e execucao normal.
+    if not classe or testes or biblioteca then
+      criar_comando(projeto, propriedades, framework, nil)
+      return
+    end
+
+    -- Projetos antigos com dispatcher proprio.
+    if legado then
+      criar_comando(projeto, propriedades, framework, classe)
+      return
+    end
+
+    -- Projetos comuns: runner global.
+    executar_classe_global(projeto, framework, classe, chamada)
+  end
+
+  -- Program.cs executa o ponto de entrada normal.
+  if vim.fn.fnamemodify(arquivo, ":t") == "Program.cs" then
     executar(nil)
     return
   end
 
-  -- Program.cs deve continuar podendo executar
-  -- o ponto de entrada normal.
-  if vim.fn.fnamemodify(arquivo, ":t") == "Program.cs" then
+  if testes or biblioteca then
     executar(nil)
     return
   end
@@ -367,15 +478,13 @@ local function escolher_execucao(arquivo, projeto, propriedades, framework)
     return
   end
 
-  -- Executor no arquivo atual ou com nome
-  -- correspondente: escolha automatica.
+  -- Arquivo atual ou executor correspondente.
   if correspondencia_direta and #candidatos == 1 then
     executar(candidatos[1].classe)
     return
   end
 
-  -- Outros executores na mesma pasta:
-  -- permitir escolha sem presumir o alvo.
+  -- Multiplos executores: solicitar escolha.
   local opcoes = {
     {
       descricao = "Executar projeto normalmente",
@@ -403,7 +512,7 @@ end
 -- SELECIONAR FRAMEWORK
 -- ========================================
 
-local function preparar_execucao(arquivo, projeto, propriedades)
+local function preparar_execucao(arquivo, projeto, propriedades, chamada)
   local frameworks = tostring(propriedades.TargetFrameworks or "")
 
   local opcoes = {}
@@ -423,18 +532,16 @@ local function preparar_execucao(arquivo, projeto, propriedades)
     end
   end
 
-  -- Nenhum framework especifico: deixar
-  -- o dotnet resolver o projeto.
   if #opcoes == 0 then
-    escolher_execucao(arquivo, projeto, propriedades, nil)
+    escolher_execucao(arquivo, projeto, propriedades, nil, chamada)
     return
   end
 
   selecionar(opcoes, "C# - Selecione o framework", function(item)
     return item
   end, function(framework)
-    if framework then
-      escolher_execucao(arquivo, projeto, propriedades, framework)
+    if framework and chamada == ultima_execucao then
+      escolher_execucao(arquivo, projeto, propriedades, framework, chamada)
     end
   end)
 end
@@ -475,8 +582,7 @@ function M.executar(arquivo)
     return
   end
 
-  -- Evitar que uma consulta antiga execute
-  -- depois de outra chamada de F6.
+  -- Cada acionamento invalida consultas anteriores.
   ultima_execucao = ultima_execucao + 1
   local chamada = ultima_execucao
 
@@ -492,7 +598,7 @@ function M.executar(arquivo)
         return
       end
 
-      preparar_execucao(arquivo, projeto, propriedades)
+      preparar_execucao(arquivo, projeto, propriedades, chamada)
     end)
   end)
 end
