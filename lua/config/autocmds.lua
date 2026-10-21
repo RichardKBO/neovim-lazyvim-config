@@ -100,6 +100,13 @@ require("languages.cmake.lsp").setup()
 require("languages.swift.lsp").setup()
 
 -- ========================================
+-- TYPESCRIPT
+-- ========================================
+
+-- Registrar o comando :TypeScriptMenu.
+require("languages.typescript.menu").setup()
+
+-- ========================================
 -- APARENCIA E CENTRAL DE ATALHOS
 -- ========================================
 

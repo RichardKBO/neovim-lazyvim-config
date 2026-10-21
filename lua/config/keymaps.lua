@@ -54,6 +54,10 @@ vim.keymap.set("n", "<F6>", function()
   elseif extensao == "swift" then
     require("languages.swift.runner").executar(arquivo)
 
+  -- TypeScript
+  elseif extensao == "ts" then
+    require("languages.typescript.runner").executar(arquivo)
+
   -- SQL
   elseif extensao == "sql" then
     require("languages.sql.runner").executar(arquivo)
@@ -72,6 +76,7 @@ vim.keymap.set("n", "<F8>", function()
   local dap = require("dap")
   local filetype = vim.bo.filetype
 
+  -- Continuar uma sessao existente.
   if dap.session() then
     dap.continue()
     return
@@ -86,13 +91,21 @@ vim.keymap.set("n", "<F8>", function()
     return
   end
 
-  -- PHP - F8 CENTRALIZADO (CLI / HTTP)
+  -- PHP - DEBUGGER CONTEXTUAL
   if filetype == "php" then
     local arquivo = vim.api.nvim_buf_get_name(0)
     require("languages.php.dap").depurar(arquivo)
     return
   end
 
+  -- TypeScript - DEBUGGER CONTEXTUAL
+  if filetype == "typescript" then
+    local arquivo = vim.api.nvim_buf_get_name(0)
+    require("languages.typescript.dap").depurar(arquivo)
+    return
+  end
+
+  -- Demais linguagens.
   dap.continue()
 end, {
   desc = "Iniciar ou continuar debugger",
@@ -106,4 +119,14 @@ vim.keymap.set("n", "<leader>cm", function()
   require("languages.csharp.menu").abrir()
 end, {
   desc = "Abrir menu C#",
+})
+
+-- ========================================
+-- MENU INTERATIVO TYPESCRIPT
+-- ========================================
+
+vim.keymap.set("n", "<leader>tm", function()
+  require("languages.typescript.menu").abrir()
+end, {
+  desc = "Abrir menu TypeScript",
 })
