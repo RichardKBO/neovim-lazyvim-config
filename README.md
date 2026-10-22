@@ -1,250 +1,200 @@
-
 # 🖥️ Neovim / LazyVim — IDE Multilinguagem
 
 ![Neovim](https://img.shields.io/badge/Editor-Neovim-57A143)
 ![LazyVim](https://img.shields.io/badge/Base-LazyVim-7C3AED)
 ![Lua](https://img.shields.io/badge/Configura%C3%A7%C3%A3o-Lua-2C2D72)
-![Status](https://img.shields.io/badge/Status-Em_desenvolvimento-orange)
+![Status](https://img.shields.io/badge/Status-Uso_Pessoal-blue)
 
-Configuração pessoal do **Neovim + LazyVim**, escrita em Lua e organizada por linguagem.
-O objetivo é reunir recursos de IDE — **LSP, autocomplete, diagnósticos, execução,
-depuração e menus contextuais** — sem perder a flexibilidade do editor.
+Configuração pessoal do **Neovim + LazyVim**, desenvolvida em Lua e organizada por linguagem de programação.
 
-> **Status:** projeto em desenvolvimento. As integrações possuem níveis diferentes
-> de validação; funcionalidades ainda não testadas são identificadas abaixo.
+O objetivo é oferecer recursos de IDE, incluindo LSP, autocomplete, diagnósticos, execução, depuração e menus contextuais.
+
+**O projeto não exige frameworks específicos.** Cada desenvolvedor escolhe e instala os frameworks de que necessita.
 
 ## ✨ Recursos principais
 
-- Configuração modular: cada linguagem possui seu próprio diretório em `lua/languages/`.
-- **F6** para execução contextual e **F8** para depuração nas linguagens já integradas.
-- **F5** para alternar breakpoints nos depuradores configurados.
-- LSP, autocomplete, navegação para definições e diagnósticos de código.
-- Menus por linguagem, notificações e central de ajuda `:Atalhos`.
-- Detecção de projetos por arquivos como `Cargo.toml`, `pom.xml`, `go.mod` e `.csproj`.
-- Integrações com Git, GitHub e ferramentas de desenvolvimento do LazyVim.
+- Configuração modular por linguagem.
+- LSP, autocomplete, diagnósticos e navegação de código.
+- F5, F6 e F8 contextuais nas linguagens integradas.
+- Menus específicos e central de atalhos `:Atalhos`.
+- Detecção automática de arquivos e projetos.
+- Temas escuros com seletor `:Temas`.
+- Ícones personalizados utilizando `mini.icons`.
+- Lualine CosmicInk com separadores LEGO.
+- Dashboard original do LazyVim com Snacks.
+- Integração com Git local.
 
-## 🌐 Linguagens e ferramentas
+## 🌐 Linguagens configuradas
 
-| Linguagem | Integração e ferramentas | Situação |
+| Linguagem | Ferramentas e recursos | Situação |
 |---|---|---|
-| **Rust** | Cargo, Rust Analyzer, F6/F8, CodeLLDB | Auditoria principal concluída |
-| **Java** | Maven, Gradle, JDTLS, F6/F8 | Auditoria principal concluída |
-| **Kotlin** | Gradle, LSP, F6/F8, KotlinMenu | Auditoria principal concluída |
-| **C / C++** | Clangd, CMake, F6/F8, CodeLLDB | Auditoria principal concluída |
-| **Go** | Gopls, Delve, F6/F8, GoMenu | Auditoria principal concluída |
-| **C#** | .NET, projetos `.csproj`, F6/F8, NetCoreDbg | Auditoria principal concluída |
-| **Python** | Pyright, Ruff, ambientes virtuais, debugpy, PythonMenu | Auditoria principal concluída |
-| **Ruby** | Solargraph, RuboCop, Bundler, RubyMenu, F6/F8 | Auditoria principal concluída |
-| **PHP** | Intelephense, Composer, Xdebug, PHPMenu, execução CLI/web | Configurado; refinamentos pendentes |
-| **Swift** | Swift 6.4.1, Swiftly, SwiftPM, SourceKit-LSP, F6/F8, LLDB-DAP | Integração principal validada |
+| Rust | Cargo, rust-analyzer, CodeLLDB, F6/F8 | Validado |
+| Java | JDTLS, Maven, Gradle, F6/F8 | Validado |
+| Kotlin | Gradle, LSP, KotlinMenu, F6/F8 | Validado |
+| C / C++ | Clangd, CMake, CodeLLDB, F6/F7/F8 | Validado |
+| Go | Gopls, Delve, GoMenu, F6/F8 | Validado |
+| C# | .NET, Roslyn, NetCoreDbg, F6/F8 | Validado |
+| Python | Pyright, Ruff, debugpy, PythonMenu | Validado |
+| Ruby | Solargraph, RuboCop, Bundler, RubyMenu | Validado |
+| PHP | Intelephense, Composer, Xdebug, PHPMenu | Configurado |
+| Swift | Swiftly, SourceKit-LSP, SwiftPM, LLDB-DAP, SwiftMenu, F6/F8 | Validado |
+| TypeScript | VTSLS, TSX, js-debug-adapter, F5/F6/F8, TypeScriptMenu | Validado |
+| JSON | jsonls, SchemaStore, formatação e diagnósticos | Validado |
 
-### Swift
+As validações correspondem aos ambientes e projetos utilizados nas auditorias.
 
-A integração Swift foi validada no Linux Mint com a toolchain oficial
-**Swift 6.4.1**, gerenciada pelo Swiftly.
+SQL, HTML e CSS aguardam auditoria final. A auditoria de Dart foi cancelada.
 
-Funcionalidades verificadas:
-
-- Compilação com `swift build`.
-- Execução com `swift run` e execução direta do binário compilado.
-- SourceKit-LSP conectado ao Neovim.
-- Diagnósticos, autocomplete, navegação e informações de código pelo LSP.
-- **F6** para compilar e executar o projeto SwiftPM atual.
-- **F5** para alternar breakpoints.
-- **F8** para iniciar ou continuar a depuração com LLDB-DAP.
-- Depuração de código orientado a objetos.
-- Projeto de teste com classes, repositório, serviço e operações CRUD.
-- Persistência dos produtos em arquivo JSON.
-- **11 testes automatizados Swift Testing aprovados** com `swift test`.
-
-Esses testes pertencem ao projeto SwiftPM utilizado na auditoria.
-A infraestrutura global de testes do Neovim ainda será desenvolvida.
-
-Os módulos Swift estão organizados em:
-
-- `lua/languages/swift/lsp.lua`
-- `lua/languages/swift/runner.lua`
-- `lua/languages/swift/dap.lua`
-- `lua/plugins/swift-dap.lua`
-
-### JSON
-
-O suporte JSON existente no Neovim também foi verificado.
-
-Funcionalidades confirmadas:
-
-- Realce de sintaxe.
-- Servidor LSP `jsonls` ativo.
-- Diagnósticos de erros de sintaxe.
-- Formatação por meio do LSP.
-- Autocomplete com sugestões de propriedades.
-- Integração com schemas do SchemaStore.
-
-Os testes foram realizados com arquivos temporários, preservando
-os dados do projeto CRUD Swift.
-
-**Próxima auditoria:** TypeScript.
-
-**Integrações e auditorias pendentes:** SQL, HTML e CSS.
-A auditoria de Dart foi cancelada e não faz parte da configuração atual.
+Swift foi validado no Linux Mint com SourceKit-LSP, SwiftPM, LLDB-DAP e 11 testes automatizados aprovados.
 
 ## 🚀 Instalação
 
 ### 1. Pré-requisitos
 
-- **Linux Mint** é o ambiente utilizado nos testes; outros sistemas ainda não foram validados.
-- **Neovim** em uma versão compatível com o LazyVim utilizado pelo repositório.
-- **Git**, **curl**, **unzip**, **ripgrep**, **fd** e ferramentas básicas de compilação.
-- Um terminal com suporte a cores; uma **Nerd Font** é recomendada para os ícones.
-- SDKs, runtimes, LSPs e depuradores das linguagens que pretende utilizar.
+Ambiente principal testado: **Linux Mint**.
 
-Instale o Neovim por uma distribuição compatível com o LazyVim; consulte os
-[lançamentos oficiais do Neovim](https://github.com/neovim/neovim/releases).
-Evite depender de uma versão antiga disponível no gerenciador de pacotes.
+- Neovim compatível com a versão do LazyVim utilizada.
+- Git, curl, unzip, ripgrep e fd.
+- Terminal com suporte a cores e Nerd Font.
+- SDKs, LSPs e depuradores das linguagens desejadas.
 
-No Linux Mint/Ubuntu, instale as ferramentas básicas:
+No Linux Mint/Ubuntu:
 
 ```bash
 sudo apt update
 sudo apt install git curl unzip ripgrep fd-find build-essential
 ```
 
-> No Ubuntu/Mint, o executável do pacote `fd-find` pode se chamar `fdfind`.
-> Verifique a exigência do seu plugin antes de criar qualquer alias.
+O pacote `fd-find` pode fornecer o executável `fdfind`.
 
-### 2. Preserve uma instalação existente
+### 2. Instalar a configuração
 
-**Execute os passos abaixo em uma máquina onde deseja instalar a configuração.**
-Se já usa Neovim, faça backup antes de clonar:
+Antes de substituir uma instalação existente, faça backup de `~/.config/nvim`.
 
-```bash
-mkdir -p ~/.config
-if [ -e ~/.config/nvim ]; then
-  mv ~/.config/nvim ~/.config/nvim.backup.$(date +%Y%m%d-%H%M%S)
-fi
+Coloque uma cópia versionada desta configuração em:
+
+```text
+~/.config/nvim/
 ```
 
-Este comando move a pasta existente para um backup, sem apagá-la.
-Não é necessário executá-lo na máquina onde o repositório já está configurado.
-
-### 3. Clone o repositório
+Inicie o editor:
 
 ```bash
-git clone https://github.com/RichardKBO/neovim-lazyvim-config.git ~/.config/nvim
 nvim
 ```
 
-Na primeira abertura, permita que o gerenciador de plugins inicialize.
-Depois, dentro do Neovim, utilize:
+Comandos úteis:
 
 ```vim
-:Lazy sync
+:Lazy
 :Mason
 :checkhealth
 ```
 
-O `:Lazy sync` sincroniza plugins, `:Mason` gerencia ferramentas suportadas
-e `:checkhealth` ajuda a identificar dependências e problemas do ambiente.
+O repositório remoto foi desconectado do desenvolvimento local. A versão publicada anteriormente no GitHub pode não conter todas as alterações atuais.
 
-### 4. Instale as ferramentas das linguagens necessárias
+### 3. Ferramentas das linguagens
 
-A configuração Lua **não instala automaticamente todos os SDKs e debuggers**.
-Prepare apenas os ambientes que pretende usar:
+Instale apenas os SDKs, compiladores, LSPs e depuradores necessários às linguagens que pretende utilizar.
 
-| Linguagem | Ferramentas externas principais |
-|---|---|
-| Rust | Rustup, Cargo, Rust Analyzer, CodeLLDB |
-| Java / Kotlin | JDK, Maven e/ou Gradle; LSP e depurador apropriados |
-| C / C++ | Compilador C/C++, CMake, Clangd, CodeLLDB |
-| Go | Go SDK, Gopls, Delve |
-| C# | .NET SDK, servidor LSP, NetCoreDbg |
-| Python | Python, Pyright, Ruff, debugpy |
-| Ruby | Ruby, Bundler, Solargraph, RuboCop |
-| PHP | PHP, Composer, Intelephense, Xdebug e adaptador PHP Debug |
-| Swift | Swiftly, Swift SDK, SourceKit-LSP e LLDB-DAP |
+Algumas ferramentas podem ser gerenciadas pelo Mason; outras exigem instalação externa ou configuração no `PATH`.
 
-Para Swift no Linux, utilize as instruções oficiais do
-[Swift.org](https://www.swift.org/install/linux/) e o gerenciador Swiftly.
+**Frameworks não são instalados nem impostos por esta configuração.**
 
-O SourceKit-LSP e o LLDB-DAP são fornecidos pela toolchain Swift utilizada.
-Os executáveis devem estar acessíveis pelo `PATH` no terminal que inicia o Neovim.
+## 🧩 Executor global C#
 
-A disponibilidade das ferramentas pelo Mason depende de cada pacote;
-SDKs e toolchains externos podem exigir instalação separada.
+O C# utiliza um executor .NET compartilhado para executar classes de exercícios sem adicionar um `DesafioRunner.cs` a cada projeto.
+
+O F6 identifica classes com:
+
+```csharp
+public static void Executar()
+{
+    // Codigo do exercicio
+}
+```
+
+Ao abrir `Program.cs`, a execução convencional é preservada.
+
+Projetos antigos com `EnableClassRunner=true` continuam utilizando seu dispatcher próprio.
+
+### Reconstruir o executor compartilhado
+
+O código-fonte versionado está em `tools/csharp-class-runner/`.
+
+Com o .NET 10 SDK instalado, execute a partir da configuração:
+
+```bash
+cd ~/.config/nvim
+dest="$HOME/.local/share/nvim/csharp-class-runner"
+mkdir -p "$dest"
+cp tools/csharp-class-runner/Program.cs "$dest/"
+cp tools/csharp-class-runner/NeovimCSharpRunner.csproj "$dest/"
+dotnet build "$dest/NeovimCSharpRunner.csproj" -c Debug
+```
+
+O executor compilado será utilizado pelo F6 e F8 nos projetos compatíveis.
+
+A configuração atual do NetCoreDbg também contém um caminho local que deverá ser ajustado em outras instalações.
 
 ## ⌨️ Atalhos e comandos
 
-| Atalho ou comando | Ação |
+| Atalho | Função |
 |---|---|
-| `F5` | Ativar ou remover breakpoint, quando disponível |
-| `F6` | Executar o arquivo ou projeto atual, nas linguagens integradas |
-| `F7` | Gerar ou atualizar configuração CMake, quando aplicável |
-| `F8` | Iniciar ou continuar depuração, quando disponível |
-| `:Atalhos` | Mostrar a central de atalhos |
-| `Espaço + u A` | Abrir a central de atalhos |
-| `:Temas` | Abrir seletor de temas |
-| `:GoMenu` | Menu de ações Go |
-| `:PythonMenu` | Menu de ações Python |
-| `:PHPMenu` | Menu de ações PHP/Composer |
+| `F5` | Adicionar/remover breakpoint |
+| `F6` | Executar arquivo ou projeto contextual |
+| `F7` | Operações CMake, quando aplicável |
+| `F8` | Iniciar/continuar depuração |
+| `:Atalhos` | Central de atalhos |
+| `:Temas` | Seletor de temas |
+| `Espaço + u + t` | Abrir seletor de temas |
+| `:GoMenu` | Menu Go |
+| `:PythonMenu` | Menu Python |
+| `:PHPMenu` | Menu PHP |
+| `Espaço + s + f` / `:SwiftMenu` | Criar e abrir projetos SwiftPM |
 
-Atalhos locais ao buffer incluem `Espaço + g m` (Go), `Espaço + c m`
-(C#), `Espaço + p m` (Python) e `Espaço + p h` (PHP).
-Os atalhos e menus dependem da linguagem do arquivo aberto.
+O `:TypeScriptMenu` (`Espaço + t + m`) cria projetos ESM com TypeScript e TSX locais. F6 executa e F8 depura o arquivo `.ts` aberto; `ts-nvim` abre a pasta de projetos.
 
-No Swift, **F6** executa o projeto SwiftPM atual e **F8** utiliza o
-depurador LLDB-DAP configurado para a linguagem.
+## 🎨 Aparência
 
-## 🗂️ Organização do repositório
+- Temas escuros alternáveis pelo seletor `:Temas`.
+- Prévia imediata, Enter para confirmar e Esc para cancelar.
+- Persistência da escolha em `tema-atual.json`.
+- Ícones de linguagens com `mini.icons`.
+- Lualine CosmicInk com cores dinâmicas e separadores LEGO.
+- Dashboard padrão do LazyVim preservado.
+
+## 🗂️ Estrutura do repositório
 
 ```text
 ~/.config/nvim/
-├── init.lua                 # Entrada da configuração
-├── lazy-lock.json           # Revisões dos plugins
-├── lazyvim.json             # Extras LazyVim
-├── README.md
-└── lua/
-    ├── config/              # Atalhos, autocmds, opções, aparência
-    ├── languages/           # Módulos específicos por linguagem
-    │   ├── rust/  java/  kotlin/  cpp/  go/  csharp/
-    │   ├── python/  ruby/  php/  swift/
-    │   └── cmake/
-    └── plugins/             # Configurações e integrações de plugins
+├── init.lua
+├── after/
+├── lua/
+│   ├── config/        # Configuracoes globais
+│   ├── languages/     # Modulos por linguagem
+│   └── plugins/       # Plugins e interface
+├── tools/
+│   └── csharp-class-runner/
+├── lazy-lock.json
+├── lazyvim.json
+└── README.md
 ```
 
-Os diretórios e módulos disponíveis variam conforme a etapa da auditoria.
-Os programas de teste e projetos pessoais ficam **fora** deste repositório.
+Projetos de estudo, ferramentas compiladas e backups ficam fora do repositório.
 
-## 🧩 Como a configuração funciona
+## 🔧 Manutenção
 
-- `lua/config/` concentra configurações gerais, atalhos, aparência e inicialização.
-- `lua/languages/` organiza `lsp.lua`, `runner.lua`, `dap.lua`, `menu.lua` e outros
-  módulos, conforme as necessidades de cada linguagem.
-- `lua/plugins/` configura extensões compartilhadas e recursos do LazyVim.
-- F6 e F8 devem respeitar o arquivo e a raiz do projeto atuais, sem reutilizar
-  acidentalmente executáveis ou contextos de outro projeto.
-
-## 🧭 Próximos passos
-
-- [x] Finalizar e testar o SourceKit-LSP do Swift no Neovim.
-- [x] Implementar e validar Swift F6/F8 com projeto OOP, CRUD e persistência JSON.
-- [x] Validar JSON com `jsonls`, diagnósticos, formatação e autocomplete.
-- [ ] Auditar TypeScript, SQL, HTML e CSS.
-- [ ] Revisar formatação, menus, atalhos, desempenho e portabilidade.
-- [ ] Revisar o comportamento das integrações quando ferramentas externas estiverem indisponíveis.
-- [ ] Adicionar infraestrutura global de testes, incluindo a integração F9 planejada.
-- [ ] Adicionar testes de regressão e validar uma instalação limpa.
-- [ ] Preparar uma versão estável da configuração.
-
-O desenvolvimento é incremental: **backup antes de editar, um arquivo e um teste
-por vez, validação de sintaxe e revisão do `git diff`** antes de commits ou PRs.
+Projeto pessoal com melhorias opcionais. Antes de editar: inspecionar,
+criar backup, alterar um arquivo por vez e validar sintaxe, testes e Git.
+Commits são locais; push e Pull Requests não são obrigatórios.
 
 ## 👨‍💻 Autor e licença
 
 **Richard Kawan Barbosa Oliveira**
 
-- [GitHub — RichardKBO](https://github.com/RichardKBO)
+- [GitHub](https://github.com/RichardKBO)
 - [LinkedIn](https://www.linkedin.com/in/richard-k-b-oliveira-9a1a3b287/)
-- Repositório: [neovim-lazyvim-config](https://github.com/RichardKBO/neovim-lazyvim-config)
+- [Repositório publicado anteriormente](https://github.com/RichardKBO/neovim-lazyvim-config)
 
-Consulte o arquivo [LICENSE](LICENSE). Projeto pessoal em evolução;
-a publicação estável dependerá da revisão das dependências e dos testes.
+Consulte o arquivo [LICENSE](LICENSE).

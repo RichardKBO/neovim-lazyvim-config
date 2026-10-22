@@ -67,6 +67,17 @@ function M.executar(arquivo)
     return
   end
 
+  -- Impedir a execucao de uma versao antiga do arquivo.
+  local buffer = vim.fn.bufnr(arquivo)
+
+  if buffer ~= -1 and vim.bo[buffer].modified then
+    vim.notify(
+      "Python: salve o arquivo com :w antes de executar.",
+      vim.log.levels.WARN
+    )
+    return
+  end
+
   local raiz = encontrar_raiz(arquivo)
   local interpretador = encontrar_interpretador(raiz)
 
