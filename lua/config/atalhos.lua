@@ -125,6 +125,34 @@ local function montar_linhas(buffer_origem)
     inserir_secao(linhas, php.linhas_ajuda())
   end
 
+  -- Swift: exibir somente quando o buffer for Swift.
+  local tipo_arquivo = vim.bo[buffer_origem].filetype
+
+  if tipo_arquivo == "swift" then
+    inserir_secao(linhas, {
+      "[SWIFT]",
+      "  Espaco + s f  Abrir SwiftMenu",
+      "  :SwiftMenu    Criar, abrir e gerenciar projetos Swift",
+      "  F5            Adicionar/remover breakpoint",
+      "  F6            Compilar e executar projeto SwiftPM",
+      "  F8            Iniciar/continuar depuracao Swift",
+      "",
+    })
+  end
+
+  -- TypeScript: exibir somente quando o buffer for TypeScript.
+  if tipo_arquivo == "typescript" then
+    inserir_secao(linhas, {
+      "[TYPESCRIPT]",
+      "  Espaco + t m  Abrir TypeScriptMenu",
+      "  :TypeScriptMenu Criar e gerenciar projetos TypeScript",
+      "  F5            Adicionar/remover breakpoint",
+      "  F6            Executar arquivo .ts atual",
+      "  F8            Depurar arquivo .ts atual",
+      "",
+    })
+  end
+
   return linhas
 end
 

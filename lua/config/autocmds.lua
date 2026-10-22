@@ -99,6 +99,12 @@ require("languages.cmake.lsp").setup()
 -- Inicializacao do SourceKit-LSP oficial.
 require("languages.swift.lsp").setup()
 
+-- Registrar o comando :SwiftMenu.
+require("languages.swift.menu").setup()
+
+-- Registrar o comando :SwiftMenu.
+require("languages.swift.menu").setup()
+
 -- ========================================
 -- TYPESCRIPT
 -- ========================================

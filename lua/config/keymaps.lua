@@ -130,3 +130,13 @@ vim.keymap.set("n", "<leader>tm", function()
 end, {
   desc = "Abrir menu TypeScript",
 })
+
+-- ========================================
+-- MENU INTERATIVO SWIFT
+-- ========================================
+
+vim.keymap.set("n", "<leader>sf", function()
+  require("languages.swift.menu").abrir()
+end, {
+  desc = "Abrir menu Swift",
+})
