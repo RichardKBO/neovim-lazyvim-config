@@ -1,8 +1,18 @@
+-- ========================================
+-- RUBY - RUBY LSP
+-- Diagnosticos e integracao com Neovim
+-- ========================================
+
 local M = {}
 
 function M.setup()
-  -- Configuracao de diagnosticos exclusiva do Ruby
-  local grupo = vim.api.nvim_create_augroup("RubySolargraphDiagnostics", { clear = true })
+  -- ========================================
+  -- DIAGNOSTICOS RUBY
+  -- ========================================
+
+  local grupo = vim.api.nvim_create_augroup("RubyLspDiagnostics", {
+    clear = true,
+  })
 
   vim.api.nvim_create_autocmd("LspAttach", {
     group = grupo,
@@ -10,7 +20,7 @@ function M.setup()
     callback = function(evento)
       local cliente = vim.lsp.get_client_by_id(evento.data.client_id)
 
-      if not cliente or cliente.name ~= "solargraph" then
+      if not cliente or cliente.name ~= "ruby_lsp" then
         return
       end
 
@@ -31,30 +41,34 @@ function M.setup()
     end,
   })
 
-  -- Manter somente Solargraph ativo para Ruby
-  vim.lsp.enable("ruby_lsp", false)
+  -- ========================================
+  -- DESATIVAR SOLARGRAPH
+  -- ========================================
 
-  vim.lsp.config("solargraph", {
-    cmd = { "solargraph", "stdio" },
+  vim.lsp.enable("solargraph", false)
 
-    filetypes = {
-      "ruby",
-      "eruby",
-    },
+  -- ========================================
+  -- CONFIGURAR RUBY LSP
+  -- ========================================
 
+  vim.lsp.config("ruby_lsp", {
     root_markers = {
       "Gemfile",
+      "gems.rb",
+      "Rakefile",
+      ".ruby-version",
+      ".tool-versions",
+      ".mise.toml",
+      "mise.toml",
       ".git",
-    },
-
-    settings = {
-      solargraph = {
-        diagnostics = true,
-      },
     },
   })
 
-  vim.lsp.enable("solargraph")
+  -- ========================================
+  -- ATIVAR RUBY LSP
+  -- ========================================
+
+  vim.lsp.enable("ruby_lsp")
 end
 
 return M
