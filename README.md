@@ -1,4 +1,3 @@
-
 # 🖥️ Neovim / LazyVim — IDE Multilinguagem
 
 ![Neovim](https://img.shields.io/badge/Editor-Neovim-57A143)
@@ -38,15 +37,15 @@ O objetivo é oferecer recursos de IDE, incluindo LSP, autocomplete, diagnóstic
 | Python | Pyright, Ruff, debugpy, PythonMenu | Validado |
 | Ruby | Solargraph, RuboCop, Bundler, RubyMenu | Validado |
 | PHP | Intelephense, Composer, Xdebug, PHPMenu | Configurado |
-| Swift | Swiftly, SourceKit-LSP, SwiftPM, LLDB-DAP | Validado |
+| Swift | Swiftly, SourceKit-LSP, SwiftPM, LLDB-DAP, SwiftMenu, F6/F8 | Validado |
+| TypeScript | VTSLS, TSX, js-debug-adapter, F5/F6/F8, TypeScriptMenu | Validado |
 | JSON | jsonls, SchemaStore, formatação e diagnósticos | Validado |
 
 As validações correspondem aos ambientes e projetos utilizados nas auditorias.
 
-SQL, TypeScript, HTML e CSS não possuem auditoria final confirmada nesta documentação. A auditoria de Dart foi cancelada.
+SQL, HTML e CSS aguardam auditoria final. A auditoria de Dart foi cancelada.
 
-A integração Swift foi validada no Linux Mint com SourceKit-LSP, SwiftPM,
-LLDB-DAP e 11 testes automatizados aprovados.
+Swift foi validado no Linux Mint com SourceKit-LSP, SwiftPM, LLDB-DAP e 11 testes automatizados aprovados.
 
 ## 🚀 Instalação
 
@@ -152,8 +151,9 @@ A configuração atual do NetCoreDbg também contém um caminho local que dever�
 | `:GoMenu` | Menu Go |
 | `:PythonMenu` | Menu Python |
 | `:PHPMenu` | Menu PHP |
+| `Espaço + s + f` / `:SwiftMenu` | Criar e abrir projetos SwiftPM |
 
-Os menus de outras linguagens são disponibilizados conforme sua integração e o buffer ativo.
+O `:TypeScriptMenu` (`Espaço + t + m`) cria projetos ESM com TypeScript e TSX locais. F6 executa e F8 depura o arquivo `.ts` aberto; `ts-nvim` abre a pasta de projetos.
 
 ## 🎨 Aparência
 
