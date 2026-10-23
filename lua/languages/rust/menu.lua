@@ -74,18 +74,170 @@ local function abrir_crate_criada(manifesto, tipo)
   abrir_arquivo(arquivo)
 end
 
-local function criar_crate_workspace(referencia)
-  selecionar_tipo(function(tipo)
-    perguntar("Caminho relativo ao workspace: ", function(caminho)
-      local manifesto, erro = crates.criar_no_workspace(caminho, tipo, referencia)
+-- Retorna o caminho relativo apenas se o diretorio estiver dentro do workspace.
+-- A verificacao por caminho real evita confusao com links simbolicos.
+local function caminho_relativo_workspace(raiz, diretorio)
+  local raiz_real = vim.uv.fs_realpath(raiz)
+  local diretorio_real = vim.uv.fs_realpath(diretorio)
 
-      if not manifesto then
-        notificar(erro, vim.log.levels.ERROR)
+  if not raiz_real or not diretorio_real then
+    return nil
+  end
+
+  if diretorio_real == raiz_real then
+    return ""
+  end
+
+  if diretorio_real:sub(1, #raiz_real + 1) ~= raiz_real .. "/" then
+    return nil
+  end
+
+  return diretorio_real:sub(#raiz_real + 2)
+end
+
+-- Navega por pastas existentes, sem exigir que o usuario digite caminhos.
+local function escolher_pasta_workspace(raiz, diretorio, callback)
+  local relativo = caminho_relativo_workspace(raiz, diretorio)
+
+  if not relativo then
+    notificar("Pasta fora do workspace.", vim.log.levels.ERROR)
+    return
+  end
+
+  local nome_atual = relativo == "" and "raiz do workspace" or relativo
+  local opcoes = {
+    {
+      id = "usar",
+      nome = "Usar esta pasta: " .. nome_atual,
+    },
+  }
+
+  if diretorio ~= raiz then
+    table.insert(opcoes, {
+      id = "voltar",
+      nome = "Voltar uma pasta",
+    })
+  end
+
+  local sucesso, entradas = pcall(vim.fn.readdir, diretorio)
+
+  if not sucesso then
+    notificar("Nao foi possivel listar a pasta: " .. tostring(entradas), vim.log.levels.ERROR)
+    return
+  end
+
+  table.sort(entradas)
+
+  for _, nome in ipairs(entradas) do
+    local caminho = vim.fs.joinpath(diretorio, nome)
+
+    if nome ~= ".git"
+      and nome ~= "target"
+      and vim.fn.isdirectory(caminho) == 1
+      and caminho_relativo_workspace(raiz, caminho) ~= nil
+      and vim.fn.filereadable(vim.fs.joinpath(caminho, "Cargo.toml")) == 0
+    then
+      table.insert(opcoes, {
+        id = "entrar",
+        nome = "Entrar em: " .. nome .. "/",
+        caminho = caminho,
+      })
+    end
+  end
+
+  vim.ui.select(opcoes, {
+    prompt = "Escolher pasta no workspace (" .. nome_atual .. "):",
+
+    format_item = function(item)
+      return item.nome
+    end,
+  }, function(escolhido)
+    if not escolhido then
+      return
+    end
+
+    if escolhido.id == "usar" then
+      callback(relativo)
+    elseif escolhido.id == "voltar" then
+      escolher_pasta_workspace(raiz, vim.fs.dirname(diretorio), callback)
+    elseif escolhido.id == "entrar" then
+      escolher_pasta_workspace(raiz, escolhido.caminho, callback)
+    end
+  end)
+end
+
+local function criar_crate_workspace(referencia, contexto)
+  local raiz = vim.fs.dirname(contexto.workspace_manifesto)
+
+  local function criar_na_pasta(diretorio_relativo)
+    perguntar("Nome da nova crate: ", function(nome)
+      if nome == "." or nome == ".." or nome:find("[/\\]") then
+        notificar("Informe apenas o nome da crate, sem pastas.", vim.log.levels.WARN)
         return
       end
 
-      abrir_crate_criada(manifesto, tipo)
+      selecionar_tipo(function(tipo)
+        local caminho = nome
+
+        if diretorio_relativo ~= "" then
+          caminho = diretorio_relativo .. "/" .. nome
+        end
+
+        local manifesto, erro = crates.criar_no_workspace(caminho, tipo, referencia)
+
+        if not manifesto then
+          notificar(erro, vim.log.levels.ERROR)
+          return
+        end
+
+        abrir_crate_criada(manifesto, tipo)
+      end)
     end)
+  end
+
+  local opcoes = {
+    {
+      id = "raiz",
+      nome = "Criar na raiz do workspace",
+    },
+    {
+      id = "outra",
+      nome = "Escolher pasta existente do workspace",
+    },
+  }
+
+  if contexto.pacote and contexto.manifesto then
+    local diretorio_crate = vim.fs.dirname(contexto.manifesto)
+    local diretorio_irma = vim.fs.dirname(diretorio_crate)
+    local relativo_irma = caminho_relativo_workspace(raiz, diretorio_irma)
+
+    if relativo_irma then
+      table.insert(opcoes, 1, {
+        id = "irma",
+        nome = "Criar ao lado da crate atual",
+        pasta = relativo_irma,
+      })
+    end
+  end
+
+  vim.ui.select(opcoes, {
+    prompt = "Onde criar a crate?",
+
+    format_item = function(item)
+      return item.nome
+    end,
+  }, function(escolhido)
+    if not escolhido then
+      return
+    end
+
+    if escolhido.id == "irma" then
+      criar_na_pasta(escolhido.pasta)
+    elseif escolhido.id == "raiz" then
+      criar_na_pasta("")
+    elseif escolhido.id == "outra" then
+      escolher_pasta_workspace(raiz, raiz, criar_na_pasta)
+    end
   end)
 end
 
@@ -267,7 +419,7 @@ function M.abrir()
     local acao = escolhido.id
 
     if acao == "crate_workspace" then
-      criar_crate_workspace(referencia)
+      criar_crate_workspace(referencia, contexto)
     elseif acao == "modulo" then
       criar_modulo(referencia)
     elseif acao == "independente" then
