@@ -93,8 +93,8 @@ local function remover_dependencia(referencia)
 
   for _, dependencia in ipairs(contexto.pacote.dependencies or {}) do
     table.insert(itens, {
-      nome = dependencia.rename or dependencia.name,
-      tipo = dependencia.kind or "normal",
+      nome = type(dependencia.rename) == "string" and dependencia.rename or dependencia.name,
+      tipo = type(dependencia.kind) == "string" and dependencia.kind or "normal",
     })
   end
 
