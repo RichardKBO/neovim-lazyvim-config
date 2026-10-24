@@ -22,30 +22,87 @@ O objetivo é oferecer recursos de IDE, incluindo LSP, autocomplete, diagnóstic
 - Ícones personalizados utilizando `mini.icons`.
 - Lualine CosmicInk com separadores LEGO.
 - Dashboard original do LazyVim com Snacks.
-- Integração com Git local.
+- Integração com Git local e GitHub.
 
 ## 🌐 Linguagens configuradas
 
 | Linguagem | Ferramentas e recursos | Situação |
 |---|---|---|
-| Rust | Cargo, rust-analyzer, CodeLLDB, F6/F8 | Validado |
-| Java | JDTLS, Maven, Gradle, F6/F8 | Validado |
-| Kotlin | Gradle, LSP, KotlinMenu, F6/F8 | Validado |
-| C / C++ | Clangd, CMake, CodeLLDB, F6/F7/F8 | Validado |
-| Go | Gopls, Delve, GoMenu, F6/F8 | Validado |
-| C# | .NET, Roslyn, NetCoreDbg, F6/F8 | Validado |
-| Python | Pyright, Ruff, debugpy, PythonMenu | Validado |
-| Ruby | Solargraph, RuboCop, Bundler, RubyMenu | Validado |
-| PHP | Intelephense, Composer, Xdebug, PHPMenu | Configurado |
-| Swift | Swiftly, SourceKit-LSP, SwiftPM, LLDB-DAP, SwiftMenu, F6/F8 | Validado |
-| TypeScript | VTSLS, TSX, js-debug-adapter, F5/F6/F8, TypeScriptMenu | Validado |
-| JSON | jsonls, SchemaStore, formatação e diagnósticos | Validado |
+| Rust | Cargo, rust-analyzer, CodeLLDB, F6/F8 | Auditoria concluída |
+| Java | JDTLS, Maven, Gradle, F6/F8 | Auditoria concluída |
+| Kotlin | Gradle, Kotlin LSP, KotlinMenu, F5/F6/F8 | Auditoria concluída |
+| C / C++ | Clangd, CMake, CodeLLDB, F6/F7/F8 | Funcional; auditoria C++ pendente |
+| Go | Gopls, Delve, GoMenu, F6/F8 | Funcional; auditoria pendente |
+| C# | .NET, Roslyn, NetCoreDbg, F6/F8 | Funcional; auditoria pendente |
+| Python | Pyright, Ruff, debugpy, PythonMenu | Auditoria concluída |
+| Ruby | Solargraph, RuboCop, Bundler, RubyMenu | Auditoria concluída |
+| PHP | Intelephense, Composer, Xdebug, PHPMenu | Configurado; auditoria pendente |
+| Swift | Swiftly, SourceKit-LSP, SwiftPM, LLDB-DAP, SwiftMenu, F6/F8 | Validação funcional realizada; auditoria pendente |
+| TypeScript | VTSLS, TSX, js-debug-adapter, F5/F6/F8, TypeScriptMenu | Validação funcional realizada; auditoria pendente |
+| JavaScript | Integrações a verificar na auditoria | Auditoria pendente |
+| JSON | jsonls, SchemaStore, formatação e diagnósticos | Validação funcional realizada; auditoria pendente |
+| HTML / CSS / SQL | Configurações a verificar | Auditoria pendente |
 
-As validações correspondem aos ambientes e projetos utilizados nas auditorias.
+**Validação funcional** indica que determinados recursos já foram testados. **Auditoria concluída** indica a revisão aprofundada realizada na jornada atual.
 
-SQL, HTML e CSS aguardam auditoria final. A auditoria de Dart foi cancelada.
+Swift foi validado anteriormente no Linux Mint com SourceKit-LSP, SwiftPM, LLDB-DAP e 11 testes automatizados aprovados.
 
-Swift foi validado no Linux Mint com SourceKit-LSP, SwiftPM, LLDB-DAP e 11 testes automatizados aprovados.
+A auditoria de Dart foi cancelada. A linguagem C não faz parte da sequência de auditorias aprofundadas, embora o suporte existente no repositório seja preservado.
+
+## ✅ Auditorias aprofundadas
+
+Auditorias concluídas:
+
+- Python
+- Ruby
+- Rust
+- Java
+- Kotlin
+
+### Auditoria Kotlin — Outubro de 2026
+
+A configuração Kotlin foi validada utilizando:
+
+- Compilador Kotlin 2.4.21, gerenciado pelo SDKMAN.
+- Kotlin LSP oficial da JetBrains, versão 263.7084.0.
+- Projetos Gradle independentes.
+- KotlinMenu para criação de projetos e tipos Kotlin.
+- F6 inteligente para selecionar a função `main()` do arquivo aberto.
+- Depuração com DAP, F5 e F8.
+- Gradle Build e execução de testes.
+
+**Resultados principais:**
+
+- Hover, autocomplete, diagnósticos, `gd` e `gr` validados.
+- Renomeação nativa do Kotlin LSP funcionando entre arquivos, incluindo imports.
+- Seis geradores Kotlin validados: Class, Interface, Data Class, Object, Enum Class e Sealed Class.
+- F6 validado com múltiplas funções `main()` em dois projetos Gradle independentes.
+- Breakpoints, inspeção de variáveis, Step Over, Step Into, Step Out e Continue aprovados.
+- Gradle Build e Gradle Test executados com sucesso.
+
+**Limitações observadas:**
+
+- O IncRename apresentou renomeação parcial e erro na interface durante os testes Kotlin. Sua configuração global foi preservada.
+- O Kotlin LSP informa suporte à formatação, mas o comando testado não produziu alterações visíveis.
+- O estilo Allman não foi forçado, para evitar incompatibilidades com a formatação Kotlin.
+
+A auditoria foi concluída sem necessidade de modificar os arquivos Lua da configuração.
+
+### Próxima sequência de auditorias
+
+1. C++
+2. Go
+3. C#
+4. Swift
+5. PHP
+6. JavaScript
+7. TypeScript
+8. JSON
+9. HTML
+10. CSS
+11. SQL
+
+Após as linguagens, o planejamento contempla frameworks e ferramentas associadas, refinamento global, auditoria do GrugFar, regressões e infraestrutura automatizada de testes.
 
 ## 🚀 Instalação
 
@@ -91,7 +148,9 @@ Comandos úteis:
 :checkhealth
 ```
 
-O repositório remoto foi desconectado do desenvolvimento local. A versão publicada anteriormente no GitHub pode não conter todas as alterações atuais.
+O repositório é mantido com Git, utilizando branches de trabalho e integração à `main` pelo GitHub quando existem alterações versionadas.
+
+Algumas ferramentas instaladas externamente, como SDKs, compiladores e servidores de linguagem, não são incluídas diretamente neste repositório.
 
 ### 3. Ferramentas das linguagens
 
@@ -148,12 +207,15 @@ A configuração atual do NetCoreDbg também contém um caminho local que dever�
 | `:Atalhos` | Central de atalhos |
 | `:Temas` | Seletor de temas |
 | `Espaço + u + t` | Abrir seletor de temas |
+| `:KotlinMenu` / `Espaço + k + m` | Menu Kotlin |
 | `:GoMenu` | Menu Go |
 | `:PythonMenu` | Menu Python |
 | `:PHPMenu` | Menu PHP |
 | `Espaço + s + f` / `:SwiftMenu` | Criar e abrir projetos SwiftPM |
 
 O `:TypeScriptMenu` (`Espaço + t + m`) cria projetos ESM com TypeScript e TSX locais. F6 executa e F8 depura o arquivo `.ts` aberto; `ts-nvim` abre a pasta de projetos.
+
+O KotlinMenu permite criar projetos Gradle, gerar tipos Kotlin, compilar e executar testes.
 
 ## 🎨 Aparência
 
@@ -170,6 +232,7 @@ O `:TypeScriptMenu` (`Espaço + t + m`) cria projetos ESM com TypeScript e TSX l
 ~/.config/nvim/
 ├── init.lua
 ├── after/
+├── formatters/
 ├── lua/
 │   ├── config/        # Configuracoes globais
 │   ├── languages/     # Modulos por linguagem
@@ -178,16 +241,29 @@ O `:TypeScriptMenu` (`Espaço + t + m`) cria projetos ESM com TypeScript e TSX l
 │   └── csharp-class-runner/
 ├── lazy-lock.json
 ├── lazyvim.json
-└── README.md
+├── README.md
+└── LICENSE
 ```
 
 Projetos de estudo, ferramentas compiladas e backups ficam fora do repositório.
 
 ## 🔧 Manutenção
 
-Projeto pessoal com melhorias opcionais. Antes de editar: inspecionar,
-criar backup, alterar um arquivo por vez e validar sintaxe, testes e Git.
-Commits são locais; push e Pull Requests não são obrigatórios.
+Projeto pessoal com melhorias incrementais e auditorias por linguagem.
+
+Antes de editar:
+
+- Inspecionar a configuração existente.
+- Criar e verificar backups.
+- Alterar um arquivo por vez.
+- Validar sintaxe, funcionamento e regressões.
+- Conferir o estado do Git antes de integrar mudanças.
+
+Quando existem alterações versionadas, o fluxo utilizado é:
+
+**Branch de trabalho → Commit → Push → Pull Request → Merge na `main`.**
+
+Auditorias concluídas sem alterações no repositório não exigem Pull Requests vazios.
 
 ## 👨‍💻 Autor e licença
 
@@ -195,6 +271,6 @@ Commits são locais; push e Pull Requests não são obrigatórios.
 
 - [GitHub](https://github.com/RichardKBO)
 - [LinkedIn](https://www.linkedin.com/in/richard-k-b-oliveira-9a1a3b287/)
-- [Repositório publicado anteriormente](https://github.com/RichardKBO/neovim-lazyvim-config)
+- [Repositório no GitHub](https://github.com/RichardKBO/neovim-lazyvim-config)
 
 Consulte o arquivo [LICENSE](LICENSE).
