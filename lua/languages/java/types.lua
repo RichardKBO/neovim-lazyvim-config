@@ -2,6 +2,7 @@ local M = {}
 
 local tipos = {
   { nome = "Nova classe", tipo = "class" },
+  { nome = "Nova classe abstrata", tipo = "abstract_class" },
   { nome = "Nova interface", tipo = "interface" },
   { nome = "Novo record", tipo = "record" },
   { nome = "Novo enum", tipo = "enum" },
@@ -95,6 +96,12 @@ local function gerar_conteudo(tipo, pacote, nome, componentes)
   if tipo == "class" then
     vim.list_extend(linhas, {
       "public class " .. nome .. " {",
+      "",
+      "}",
+    })
+  elseif tipo == "abstract_class" then
+    vim.list_extend(linhas, {
+      "public abstract class " .. nome .. " {",
       "",
       "}",
     })
