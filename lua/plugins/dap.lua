@@ -13,12 +13,6 @@ return {
         end,
         desc = "Toggle Breakpoint",
       },
-
-      {
-        "<F7>",
-        "<cmd>CMakeGenerate<cr>",
-        desc = "CMake: Generate",
-      },
     },
 
     opts = function()

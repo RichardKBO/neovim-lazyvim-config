@@ -12,11 +12,6 @@ end
 -- DIRETORIO DE EXECUCAO
 -- ========================================
 
--- Utilizar a raiz CMake como cwd durante
--- a depuracao de projetos.
---
--- Em arquivos independentes, utilizar a
--- pasta do proprio arquivo.
 local function localizar_cwd(arquivo, fallback)
   local encontrados = vim.fs.find("CMakeLists.txt", {
     path = vim.fs.dirname(arquivo),
@@ -31,11 +26,53 @@ local function localizar_cwd(arquivo, fallback)
 end
 
 -- ========================================
+-- IDENTIFICAR CONFIGURACAO DO BUILD
+-- ========================================
+
+local function identificar_tipo_build(executavel)
+  local diretorio = vim.fs.dirname(executavel)
+
+  -- Procurar o CMakeCache.txt a partir da
+  -- pasta que contem o executavel.
+  while diretorio do
+    local cache = vim.fs.joinpath(diretorio, "CMakeCache.txt")
+
+    if vim.fn.filereadable(cache) == 1 then
+      local ok, linhas = pcall(vim.fn.readfile, cache)
+
+      if not ok then
+        avisar("C++: falha ao ler configuracao do build.", vim.log.levels.WARN)
+        return nil
+      end
+
+      for _, linha in ipairs(linhas) do
+        local tipo = linha:match("^CMAKE_BUILD_TYPE:[^=]*=(.*)$")
+
+        if tipo then
+          return vim.trim(tipo)
+        end
+      end
+
+      return nil
+    end
+
+    local pai = vim.fs.dirname(diretorio)
+
+    if not pai or pai == diretorio then
+      break
+    end
+
+    diretorio = pai
+  end
+
+  return nil
+end
+
+-- ========================================
 -- INICIAR CODELLDB
 -- ========================================
 
 local function iniciar_debugger(dap, arquivo, executavel, cwd)
-  -- Evitar iniciar uma segunda sessao.
   if dap.session() then
     avisar("C++: ja existe uma sessao de depuracao.", vim.log.levels.WARN)
     return
@@ -43,7 +80,6 @@ local function iniciar_debugger(dap, arquivo, executavel, cwd)
 
   local diretorio = localizar_cwd(arquivo, cwd)
 
-  -- Configuracao dinamica do CodeLLDB.
   local configuracao = {
     type = "codelldb",
     request = "launch",
@@ -57,13 +93,48 @@ local function iniciar_debugger(dap, arquivo, executavel, cwd)
     stopOnEntry = false,
   }
 
-  avisar("C++: iniciando debugger para " .. vim.fn.fnamemodify(executavel, ":t"))
+  local function executar_debugger()
+    -- Verificar novamente porque a confirmacao
+    -- pode acontecer depois de outra sessao iniciar.
+    if dap.session() then
+      avisar("C++: ja existe uma sessao de depuracao.", vim.log.levels.WARN)
+      return
+    end
 
-  local ok, erro = pcall(dap.run, configuracao)
+    avisar("C++: iniciando debugger para " .. vim.fn.fnamemodify(executavel, ":t"))
 
-  if not ok then
-    avisar("C++: falha ao iniciar CodeLLDB: " .. tostring(erro), vim.log.levels.ERROR)
+    local ok, erro = pcall(dap.run, configuracao)
+
+    if not ok then
+      avisar("C++: falha ao iniciar CodeLLDB: " .. tostring(erro), vim.log.levels.ERROR)
+    end
   end
+
+  -- Consultar a configuracao efetiva do build,
+  -- sem depender apenas do nome do preset.
+  local tipo = identificar_tipo_build(executavel)
+
+  if tipo == "Release" or tipo == "MinSizeRel" then
+    local opcoes = {
+      "Cancelar depuracao",
+      "Depurar mesmo assim",
+    }
+
+    vim.ui.select(opcoes, {
+      prompt = "C++: build " .. tipo .. " pode dificultar a depuracao. Deseja continuar?",
+    }, function(escolha)
+      if escolha ~= opcoes[2] then
+        avisar("C++: depuracao cancelada. " .. "Configuracao " .. tipo .. " preservada.", vim.log.levels.WARN)
+        return
+      end
+
+      executar_debugger()
+    end)
+
+    return
+  end
+
+  executar_debugger()
 end
 
 -- ========================================
@@ -71,7 +142,6 @@ end
 -- ========================================
 
 function M.depurar(arquivo)
-  -- Carregar nvim-dap.
   local ok_dap, dap = pcall(require, "dap")
 
   if not ok_dap then
@@ -79,20 +149,17 @@ function M.depurar(arquivo)
     return
   end
 
-  -- Se o debugger ja estiver ativo,
-  -- continuar a execucao.
+  -- Continuar a sessao existente.
   if dap.session() then
     dap.continue()
     return
   end
 
-  -- Verificar o adaptador compartilhado.
   if not dap.adapters.codelldb then
-    avisar("C++: adaptador CodeLLDB " .. "nao esta configurado.", vim.log.levels.ERROR)
+    avisar("C++: adaptador CodeLLDB nao esta configurado.", vim.log.levels.ERROR)
     return
   end
 
-  -- Capturar o arquivo atual.
   arquivo = arquivo or vim.api.nvim_buf_get_name(0)
 
   if arquivo == "" then
@@ -102,7 +169,6 @@ function M.depurar(arquivo)
 
   arquivo = vim.fs.normalize(vim.fn.fnamemodify(arquivo, ":p"))
 
-  -- Carregar o runner dinamico.
   local ok_runner, runner = pcall(require, "languages.cpp.runner")
 
   if not ok_runner or type(runner.preparar) ~= "function" then
@@ -110,14 +176,6 @@ function M.depurar(arquivo)
     return
   end
 
-  -- Preparar o executavel.
-  --
-  -- O runner identifica a raiz CMake,
-  -- configura, compila e retorna o
-  -- executavel correspondente ao arquivo.
-  --
-  -- Para arquivos isolados, utiliza
-  -- o compilador diretamente.
   local ok, erro = pcall(runner.preparar, arquivo, function(executavel, cwd)
     iniciar_debugger(dap, arquivo, executavel, cwd)
   end)

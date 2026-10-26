@@ -25,7 +25,6 @@ require("languages.ruby.keymaps").setup()
 -- C / C++
 -- ========================================
 
-require("languages.cpp.lsp").setup()
 require("languages.cpp.diagnostics").setup()
 require("languages.cpp.keymaps").setup()
 require("languages.cpp.menu").setup()
