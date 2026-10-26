@@ -3,6 +3,8 @@ local M = {}
 -- Modulos C++.
 local projetos = require("languages.cpp.projects")
 local tipos = require("languages.cpp.types")
+local runner = require("languages.cpp.runner")
+local debugger = require("languages.cpp.debugger")
 
 -- Identificar o diretorio de partida.
 local function diretorio_atual(arquivo)
@@ -19,8 +21,7 @@ local function diretorio_atual(arquivo)
   return vim.fs.dirname(caminho)
 end
 
--- Localizar o projeto CMake mais proximo
--- do arquivo atualmente aberto.
+-- Localizar a raiz CMake pelo arquivo aberto.
 function M.raiz_cmake(arquivo)
   local diretorio = diretorio_atual(arquivo)
 
@@ -38,8 +39,7 @@ function M.raiz_cmake(arquivo)
   return vim.fs.dirname(marcadores[1])
 end
 
--- Verificar se o arquivo aberto possui
--- uma extensao de codigo C/C++.
+-- Identificar arquivos de codigo C/C++.
 local function eh_codigo_cpp(arquivo)
   if not arquivo or arquivo == "" then
     return false
@@ -57,28 +57,10 @@ local function eh_codigo_cpp(arquivo)
   return extensoes[extensao] == true
 end
 
--- Executar comandos existentes do CMake Tools.
-local function executar_cmake(comando)
-  local ok, erro = pcall(vim.cmd, comando)
-
-  if not ok then
-    vim.notify(
-      "C++: falha ao executar "
-        .. comando
-        .. ".\n"
-        .. tostring(erro)
-        .. "\nVerifique se o CMake foi configurado com F7.",
-      vim.log.levels.ERROR
-    )
-  end
-end
-
 -- Abrir o CPPMenu.
 function M.abrir()
-  -- Capturar o arquivo atual antes
-  -- de abrir a interface de selecao.
+  -- Capturar o arquivo antes de abrir o seletor.
   local arquivo = vim.api.nvim_buf_get_name(0)
-
   local raiz = M.raiz_cmake(arquivo)
 
   local opcoes = {
@@ -90,10 +72,7 @@ function M.abrir()
     },
   }
 
-  -- Mostrar funcionalidades de projetos CMake.
   if raiz then
-    -- Gerador de classes com header,
-    -- implementacao e integracao CMake.
     table.insert(opcoes, {
       nome = "Criar classe C++ (.hpp + .cpp)",
       executar = function()
@@ -101,39 +80,60 @@ function M.abrir()
       end,
     })
 
+    -- Mesma configuracao utilizada pelo F7.
     table.insert(opcoes, {
       nome = "CMake - Configurar projeto (F7)",
       executar = function()
-        executar_cmake("CMakeGenerate")
+        runner.configurar(arquivo)
       end,
     })
 
-    table.insert(opcoes, {
-      nome = "CMake - Compilar projeto",
-      executar = function()
-        executar_cmake("CMakeBuild")
-      end,
-    })
+    -- Permitir alterar o preset salvo pelo projeto.
+    if vim.fn.filereadable(vim.fs.joinpath(raiz, "CMakePresets.json")) == 1
+      or vim.fn.filereadable(vim.fs.joinpath(raiz, "CMakeUserPresets.json")) == 1
+    then
+      table.insert(opcoes, {
+        nome = "CMake - Alterar preset",
+        executar = function()
+          local presets = require("languages.cpp.presets")
 
-    table.insert(opcoes, {
-      nome = "CMake - Selecionar tipo de build",
-      executar = function()
-        executar_cmake("CMakeSelectBuildType")
-      end,
-    })
+          presets.selecionar(raiz, function(nome)
+            if nome then
+              runner.configurar(arquivo)
+            end
+          end)
+        end,
+      })
+    end
 
     if eh_codigo_cpp(arquivo) then
+      -- Compilar somente o alvo associado ao arquivo.
       table.insert(opcoes, {
-        nome = "CMake - Executar arquivo atual (F6)",
+        nome = "CMake - Compilar alvo do arquivo atual",
         executar = function()
-          executar_cmake("CMakeRunCurrentFile")
+          runner.preparar(arquivo, function(executavel)
+            vim.notify(
+              "C++: alvo compilado: "
+                .. vim.fn.fnamemodify(executavel, ":t"),
+              vim.log.levels.INFO
+            )
+          end)
         end,
       })
 
+      -- Mesma execucao utilizada pelo F6.
+      table.insert(opcoes, {
+        nome = "CMake - Executar arquivo atual (F6)",
+        executar = function()
+          runner.executar(arquivo)
+        end,
+      })
+
+      -- Mesma depuracao utilizada pelo F8.
       table.insert(opcoes, {
         nome = "CMake - Depurar arquivo atual (F8)",
         executar = function()
-          executar_cmake("CMakeDebugCurrentFile")
+          debugger.depurar(arquivo)
         end,
       })
     end
@@ -146,8 +146,17 @@ function M.abrir()
       return item.nome
     end,
   }, function(escolha)
-    if escolha then
-      escolha.executar()
+    if not escolha then
+      return
+    end
+
+    local ok, erro = pcall(escolha.executar)
+
+    if not ok then
+      vim.notify(
+        "C++: falha na operacao do CPPMenu: " .. tostring(erro),
+        vim.log.levels.ERROR
+      )
     end
   end)
 end

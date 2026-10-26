@@ -82,12 +82,12 @@ vim.keymap.set("n", "<F8>", function()
     return
   end
 
-  -- C/C++ possui F8 especifico no buffer,
-  -- configurado por languages.cpp.keymaps.
-  -- Preservamos o comportamento global antigo
-  -- como fallback.
+  -- C/C++ possui F8 especifico no buffer.
+  -- Quando indisponivel, o F8 global utiliza
+  -- o mesmo debugger inteligente.
   if filetype == "cpp" or filetype == "c" then
-    require("cmake-tools").debug({})
+    local arquivo = vim.api.nvim_buf_get_name(0)
+    require("languages.cpp.debugger").depurar(arquivo)
     return
   end
 

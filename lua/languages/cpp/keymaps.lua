@@ -15,6 +15,28 @@ function M.eh_contexto_cpp(buffer)
 end
 
 -- ========================================
+-- IDENTIFICAR CMakeLists.txt
+-- ========================================
+
+local function eh_cmake_principal(buffer)
+  if not buffer or not vim.api.nvim_buf_is_valid(buffer) then
+    return false
+  end
+
+  if vim.bo[buffer].filetype ~= "cmake" then
+    return false
+  end
+
+  local arquivo = vim.api.nvim_buf_get_name(buffer)
+
+  if arquivo == "" then
+    return false
+  end
+
+  return vim.fn.fnamemodify(arquivo, ":t") == "CMakeLists.txt"
+end
+
+-- ========================================
 -- CENTRAL DE ATALHOS
 -- ========================================
 
@@ -25,10 +47,27 @@ function M.linhas_ajuda()
     "  :CPPMenu       Gerenciar projetos C++",
     "  F5             Adicionar/remover breakpoint",
     "  F6             Executar arquivo atual",
-    "  F7             Gerar/atualizar CMake",
+    "  F7             Configurar projeto CMake atual",
     "  F8             Depurar arquivo atual / continuar",
     "",
   }
+end
+
+-- ========================================
+-- CONFIGURACAO CMAKE INTELIGENTE
+-- ========================================
+
+local function configurar_cpp()
+  local ok, runner = pcall(require, "languages.cpp.runner")
+
+  if not ok then
+    vim.notify("C++: runner.lua indisponivel.", vim.log.levels.ERROR)
+    return
+  end
+
+  -- Identificar o projeto pelo arquivo atual.
+  -- Nao depender do cwd global do Neovim.
+  runner.configurar(vim.api.nvim_buf_get_name(0))
 end
 
 -- ========================================
@@ -53,10 +92,26 @@ local function depurar_cpp()
 end
 
 -- ========================================
--- ATALHOS LOCAIS C/C++
+-- ATALHOS LOCAIS C/C++ E CMAKE
 -- ========================================
 
 local function aplicar(buffer)
+  if not buffer or not vim.api.nvim_buf_is_valid(buffer) then
+    return
+  end
+
+  -- CMakeLists.txt recebe somente o F7.
+  if eh_cmake_principal(buffer) then
+    vim.keymap.set("n", "<F7>", configurar_cpp, {
+      buffer = buffer,
+      silent = true,
+      desc = "CMake: configurar projeto do arquivo atual",
+    })
+
+    return
+  end
+
+  -- Preservar os atalhos C/C++ existentes.
   if not M.eh_contexto_cpp(buffer) then
     return
   end
@@ -68,6 +123,13 @@ local function aplicar(buffer)
     buffer = buffer,
     silent = true,
     desc = "C++: abrir CPPMenu",
+  })
+
+  -- F7 inteligente para C/C++.
+  vim.keymap.set("n", "<F7>", configurar_cpp, {
+    buffer = buffer,
+    silent = true,
+    desc = "C++: configurar projeto CMake atual",
   })
 
   -- F8 dinamico para C/C++.
@@ -83,11 +145,13 @@ end
 -- ========================================
 
 function M.setup()
-  local grupo = vim.api.nvim_create_augroup("CppDebuggerKeymaps", { clear = true })
+  local grupo = vim.api.nvim_create_augroup("CppDebuggerKeymaps", {
+    clear = true,
+  })
 
   vim.api.nvim_create_autocmd("FileType", {
     group = grupo,
-    pattern = { "cpp", "c" },
+    pattern = { "cpp", "c", "cmake" },
 
     callback = function(evento)
       aplicar(evento.buf)
