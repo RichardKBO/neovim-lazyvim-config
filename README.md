@@ -5,24 +5,16 @@
 ![Lua](https://img.shields.io/badge/Configura%C3%A7%C3%A3o-Lua-2C2D72)
 ![Status](https://img.shields.io/badge/Status-Uso_Pessoal-blue)
 
-Configuração pessoal do **Neovim + LazyVim**, desenvolvida em Lua e organizada por linguagem de programação.
-
-O objetivo é oferecer recursos de IDE, incluindo LSP, autocomplete, diagnósticos, execução, depuração e menus contextuais.
-
-**O projeto não exige frameworks específicos.** Cada desenvolvedor escolhe e instala os frameworks de que necessita.
+Configuração pessoal do **Neovim + LazyVim**, desenvolvida em Lua e organizada por linguagem. Oferece recursos de IDE, como LSP, autocomplete, diagnósticos, execução, depuração e menus contextuais. **Nenhum framework é obrigatório.**
 
 ## ✨ Recursos principais
 
-- Configuração modular por linguagem.
-- LSP, autocomplete, diagnósticos e navegação de código.
-- F5, F6 e F8 contextuais nas linguagens integradas.
-- Menus específicos e central de atalhos `:Atalhos`.
-- Detecção automática de arquivos e projetos.
-- Temas escuros com seletor `:Temas`.
-- Ícones personalizados utilizando `mini.icons`.
-- Lualine CosmicInk com separadores LEGO.
-- Dashboard original do LazyVim com Snacks.
-- Integração com Git local e GitHub.
+- Arquitetura modular por linguagem e detecção contextual de projetos.
+- LSP, autocomplete, navegação, diagnósticos, execução e DAP.
+- F5/F6/F8 contextuais; F7 conforme a linguagem (GoMenu ou CMake).
+- Menus por linguagem e Central de Atalhos (`:Atalhos`).
+- Temas escuros, seletor `:Temas`, `mini.icons` e Lualine CosmicInk com separadores LEGO.
+- Dashboard do LazyVim com Snacks e integração com Git/GitHub.
 
 ## 🌐 Linguagens configuradas
 
@@ -31,116 +23,77 @@ O objetivo é oferecer recursos de IDE, incluindo LSP, autocomplete, diagnóstic
 | Rust | Cargo, rust-analyzer, CodeLLDB, F6/F8 | Auditoria concluída |
 | Java | JDTLS, Maven, Gradle, F6/F8 | Auditoria concluída |
 | Kotlin | Gradle, Kotlin LSP, KotlinMenu, F5/F6/F8 | Auditoria concluída |
-| C / C++ | Clangd, CMake, CodeLLDB, F6/F7/F8 | Funcional; auditoria C++ pendente |
-| Go | Gopls, Delve, GoMenu, F6/F8 | Funcional; auditoria pendente |
-| C# | .NET, Roslyn, NetCoreDbg, F6/F8 | Funcional; auditoria pendente |
+| C / C++ | Clangd, CMake, CodeLLDB, F6/F7/F8 | Auditoria C++ concluída |
+| Go | Gopls, Delve, golangci-lint, GoMenu, F5/F6/F7/F8 | Auditoria em fechamento; integração pendente |
+| C# | .NET, Roslyn, NetCoreDbg, executor compartilhado | Auditoria realizada; reforço prático pendente |
 | Python | Pyright, Ruff, debugpy, PythonMenu | Auditoria concluída |
 | Ruby | Solargraph, RuboCop, Bundler, RubyMenu | Auditoria concluída |
 | PHP | Intelephense, Composer, Xdebug, PHPMenu | Configurado; auditoria pendente |
-| Swift | Swiftly, SourceKit-LSP, SwiftPM, LLDB-DAP, SwiftMenu, F6/F8 | Validação funcional realizada; auditoria pendente |
-| TypeScript | VTSLS, TSX, js-debug-adapter, F5/F6/F8, TypeScriptMenu | Validação funcional realizada; auditoria pendente |
-| JavaScript | Integrações a verificar na auditoria | Auditoria pendente |
-| JSON | jsonls, SchemaStore, formatação e diagnósticos | Validação funcional realizada; auditoria pendente |
-| HTML / CSS / SQL | Configurações a verificar | Auditoria pendente |
+| Swift | Swiftly, SourceKit-LSP, SwiftPM, LLDB-DAP, SwiftMenu | Validação funcional; auditoria pendente |
+| TypeScript | VTSLS, TSX, js-debug-adapter, TypeScriptMenu | Validação funcional; auditoria pendente |
+| JavaScript | Integrações a verificar | Auditoria pendente |
+| JSON | jsonls, SchemaStore, formatação, diagnósticos | Validação funcional; auditoria pendente |
+| HTML / CSS / SQL | Configurações a verificar | Auditorias pendentes |
 
-**Validação funcional** indica que determinados recursos já foram testados. **Auditoria concluída** indica a revisão aprofundada realizada na jornada atual.
+**Validação funcional** significa testes específicos realizados. **Auditoria concluída** indica revisão aprofundada; funcionalidades ainda não integradas à `main` são identificadas separadamente.
 
-Swift foi validado anteriormente no Linux Mint com SourceKit-LSP, SwiftPM, LLDB-DAP e 11 testes automatizados aprovados.
-
-A auditoria de Dart foi cancelada. A linguagem C não faz parte da sequência de auditorias aprofundadas, embora o suporte existente no repositório seja preservado.
+Swift foi validado no Linux Mint com SourceKit-LSP, SwiftPM, LLDB-DAP e 11 testes automatizados aprovados. A auditoria de Dart foi cancelada. C mantém seu suporte, mas não integra a sequência de auditorias aprofundadas.
 
 ## ✅ Auditorias aprofundadas
 
-Auditorias concluídas:
+**Concluídas e integradas:** Python, Ruby, Rust, Java, Kotlin e C++.
 
-- Python
-- Ruby
-- Rust
-- Java
-- Kotlin
+### Kotlin — Outubro de 2026
 
-### Auditoria Kotlin — Outubro de 2026
+- Kotlin 2.4.21 (SDKMAN), Kotlin LSP da JetBrains 263.7084.0 e projetos Gradle independentes.
+- KotlinMenu: criação de projetos e seis tipos (Class, Interface, Data Class, Object, Enum Class e Sealed Class).
+- Hover, autocomplete, diagnósticos, `gd`, `gr` e renomeação nativa entre arquivos testados.
+- F6 com múltiplas `main()`, F5/F8 com inspeção, passos e continuação; Gradle Build/Test aprovados.
+- Limitações: IncRename teve renomeação parcial; formatação do LSP não alterou o arquivo no teste. Allman não foi forçado.
 
-A configuração Kotlin foi validada utilizando:
+### Go — Outubro de 2026 (branch `feat/go-audit`)
 
-- Compilador Kotlin 2.4.21, gerenciado pelo SDKMAN.
-- Kotlin LSP oficial da JetBrains, versão 263.7084.0.
-- Projetos Gradle independentes.
-- KotlinMenu para criação de projetos e tipos Kotlin.
-- F6 inteligente para selecionar a função `main()` do arquivo aberto.
-- Depuração com DAP, F5 e F8.
-- Gradle Build e execução de testes.
+- F6 com seleção contextual de executáveis em módulos internos e externos; arquivos sem `go.mod` executados isoladamente.
+- F5/F8 com Delve: breakpoints, inspeção de variáveis, continuação e encerramento da sessão DAP.
+- Gopls e `golangci-lint` contextualizados por projeto/arquivo; diagnóstico ST1023 detectado e removido após correção, inclusive sem módulo.
+- GoMenu (`:GoMenu`, `Espaço + g + m` e F7): criar projeto, executar, depurar, compilar, testar, selecionar executável, analisar, organizar dependências e mostrar informações do módulo.
+- As opções dependentes de `go.mod` são ocultadas em arquivos isolados; `go mod tidy` requer confirmação e protege alterações não salvas em `go.mod`/`go.sum`.
+- F7 do C++/CMake e Central de Atalhos testados após a integração do GoMenu.
+- **Estado:** testes funcionais realizados; revisão Git, commit, PR e merge na `main` ainda pendentes.
 
-**Resultados principais:**
+### Próxima sequência de trabalho
 
-- Hover, autocomplete, diagnósticos, `gd` e `gr` validados.
-- Renomeação nativa do Kotlin LSP funcionando entre arquivos, incluindo imports.
-- Seis geradores Kotlin validados: Class, Interface, Data Class, Object, Enum Class e Sealed Class.
-- F6 validado com múltiplas funções `main()` em dois projetos Gradle independentes.
-- Breakpoints, inspeção de variáveis, Step Over, Step Into, Step Out e Continue aprovados.
-- Gradle Build e Gradle Test executados com sucesso.
+1. Fechar a auditoria Go (revisão, commit e integração).
+2. C#: reforço prático da configuração existente, sem refazer a auditoria.
+3. TypeScript.
+4. Swift.
+5. PHP.
+6. JavaScript.
+7. JSON.
+8. HTML.
+9. CSS.
+10. SQL.
 
-**Limitações observadas:**
-
-- O IncRename apresentou renomeação parcial e erro na interface durante os testes Kotlin. Sua configuração global foi preservada.
-- O Kotlin LSP informa suporte à formatação, mas o comando testado não produziu alterações visíveis.
-- O estilo Allman não foi forçado, para evitar incompatibilidades com a formatação Kotlin.
-
-A auditoria foi concluída sem necessidade de modificar os arquivos Lua da configuração.
-
-### Próxima sequência de auditorias
-
-1. C++
-2. Go
-3. C#
-4. Swift
-5. PHP
-6. JavaScript
-7. TypeScript
-8. JSON
-9. HTML
-10. CSS
-11. SQL
-
-Após as linguagens, o planejamento contempla frameworks e ferramentas associadas, refinamento global, auditoria do GrugFar, regressões e infraestrutura automatizada de testes.
+Depois: frameworks opcionais, refinamento global, GrugFar, regressões e infraestrutura automatizada de testes.
 
 ## 🚀 Instalação
 
-### 1. Pré-requisitos
+### Pré-requisitos
 
-Ambiente principal testado: **Linux Mint**.
-
-- Neovim compatível com a versão do LazyVim utilizada.
-- Git, curl, unzip, ripgrep e fd.
-- Terminal com suporte a cores e Nerd Font.
-- SDKs, LSPs e depuradores das linguagens desejadas.
-
-No Linux Mint/Ubuntu:
+Ambiente principal testado: **Linux Mint**. Requer Neovim compatível com o LazyVim utilizado, Git, curl, unzip, ripgrep, fd, terminal com cores e Nerd Font. SDKs, LSPs e depuradores são instalados conforme a linguagem.
 
 ```bash
 sudo apt update
 sudo apt install git curl unzip ripgrep fd-find build-essential
 ```
 
-O pacote `fd-find` pode fornecer o executável `fdfind`.
+### Instalar e verificar
 
-### 2. Instalar a configuração
-
-Antes de substituir uma instalação existente, faça backup de `~/.config/nvim`.
-
-Coloque uma cópia versionada desta configuração em:
-
-```text
-~/.config/nvim/
-```
-
-Inicie o editor:
+Faça backup de `~/.config/nvim` antes de substituir uma instalação. Coloque a configuração versionada nesse diretório e execute:
 
 ```bash
 nvim
 ```
-
-Comandos úteis:
 
 ```vim
 :Lazy
@@ -148,23 +101,11 @@ Comandos úteis:
 :checkhealth
 ```
 
-O repositório é mantido com Git, utilizando branches de trabalho e integração à `main` pelo GitHub quando existem alterações versionadas.
-
-Algumas ferramentas instaladas externamente, como SDKs, compiladores e servidores de linguagem, não são incluídas diretamente neste repositório.
-
-### 3. Ferramentas das linguagens
-
-Instale apenas os SDKs, compiladores, LSPs e depuradores necessários às linguagens que pretende utilizar.
-
-Algumas ferramentas podem ser gerenciadas pelo Mason; outras exigem instalação externa ou configuração no `PATH`.
-
-**Frameworks não são instalados nem impostos por esta configuração.**
+Compiladores, SDKs e ferramentas instalados externamente não fazem parte do repositório. **Frameworks não são impostos pela configuração.**
 
 ## 🧩 Executor global C#
 
-O C# utiliza um executor .NET compartilhado para executar classes de exercícios sem adicionar um `DesafioRunner.cs` a cada projeto.
-
-O F6 identifica classes com:
+O C# utiliza um executor .NET compartilhado, evitando criar um `DesafioRunner.cs` por projeto. O F6 identifica classes com:
 
 ```csharp
 public static void Executar()
@@ -173,15 +114,11 @@ public static void Executar()
 }
 ```
 
-Ao abrir `Program.cs`, a execução convencional é preservada.
-
-Projetos antigos com `EnableClassRunner=true` continuam utilizando seu dispatcher próprio.
+Em `Program.cs`, a execução convencional é preservada. Projetos antigos com `EnableClassRunner=true` continuam usando seu dispatcher.
 
 ### Reconstruir o executor compartilhado
 
-O código-fonte versionado está em `tools/csharp-class-runner/`.
-
-Com o .NET 10 SDK instalado, execute a partir da configuração:
+O código-fonte está em `tools/csharp-class-runner/`. Com o SDK .NET 10:
 
 ```bash
 cd ~/.config/nvim
@@ -192,39 +129,31 @@ cp tools/csharp-class-runner/NeovimCSharpRunner.csproj "$dest/"
 dotnet build "$dest/NeovimCSharpRunner.csproj" -c Debug
 ```
 
-O executor compilado será utilizado pelo F6 e F8 nos projetos compatíveis.
-
-A configuração atual do NetCoreDbg também contém um caminho local que deverá ser ajustado em outras instalações.
+O executável compilado atende F6/F8 em projetos compatíveis. O NetCoreDbg ainda contém um caminho local que precisa ser adaptado em outras instalações.
 
 ## ⌨️ Atalhos e comandos
 
-| Atalho | Função |
+| Atalho / comando | Função |
 |---|---|
 | `F5` | Adicionar/remover breakpoint |
-| `F6` | Executar arquivo ou projeto contextual |
-| `F7` | Operações CMake, quando aplicável |
+| `F6` | Executar arquivo, pacote ou projeto contextual |
+| `F7` | GoMenu em Go; configuração CMake em C++ |
 | `F8` | Iniciar/continuar depuração |
-| `:Atalhos` | Central de atalhos |
-| `:Temas` | Seletor de temas |
-| `Espaço + u + t` | Abrir seletor de temas |
-| `:KotlinMenu` / `Espaço + k + m` | Menu Kotlin |
-| `:GoMenu` | Menu Go |
-| `:PythonMenu` | Menu Python |
-| `:PHPMenu` | Menu PHP |
-| `Espaço + s + f` / `:SwiftMenu` | Criar e abrir projetos SwiftPM |
+| `:Atalhos` | Central de atalhos contextual |
+| `:Temas` / `Espaço + u + t` | Seleção de temas |
+| `:GoMenu` / `Espaço + g + m` | Gerenciamento de projetos Go |
+| `:KotlinMenu` / `Espaço + k + m` | Projetos, tipos, build e testes Kotlin |
+| `:PythonMenu` / `:PHPMenu` | Menus das respectivas linguagens |
+| `:SwiftMenu` / `Espaço + s + f` | Projetos SwiftPM |
+| `:TypeScriptMenu` / `Espaço + t + m` | Projetos TypeScript ESM |
 
-O `:TypeScriptMenu` (`Espaço + t + m`) cria projetos ESM com TypeScript e TSX locais. F6 executa e F8 depura o arquivo `.ts` aberto; `ts-nvim` abre a pasta de projetos.
-
-O KotlinMenu permite criar projetos Gradle, gerar tipos Kotlin, compilar e executar testes.
+No TypeScript, o menu cria projetos ESM com TypeScript/TSX locais; F6 executa e F8 depura o arquivo `.ts` aberto. `ts-nvim` abre a pasta dos projetos.
 
 ## 🎨 Aparência
 
-- Temas escuros alternáveis pelo seletor `:Temas`.
-- Prévia imediata, Enter para confirmar e Esc para cancelar.
-- Persistência da escolha em `tema-atual.json`.
-- Ícones de linguagens com `mini.icons`.
-- Lualine CosmicInk com cores dinâmicas e separadores LEGO.
-- Dashboard padrão do LazyVim preservado.
+- Temas escuros alternáveis com prévia; Enter confirma e Esc cancela.
+- Escolha persistida em `tema-atual.json`.
+- Ícones via `mini.icons`, Lualine CosmicInk e dashboard LazyVim/Snacks.
 
 ## 🗂️ Estrutura do repositório
 
@@ -234,11 +163,10 @@ O KotlinMenu permite criar projetos Gradle, gerar tipos Kotlin, compilar e execu
 ├── after/
 ├── formatters/
 ├── lua/
-│   ├── config/        # Configuracoes globais
-│   ├── languages/     # Modulos por linguagem
-│   └── plugins/       # Plugins e interface
-├── tools/
-│   └── csharp-class-runner/
+│   ├── config/       # Configuracoes globais
+│   ├── languages/    # Modulos por linguagem
+│   └── plugins/      # Plugins e interface
+├── tools/csharp-class-runner/
 ├── lazy-lock.json
 ├── lazyvim.json
 ├── README.md
@@ -249,21 +177,11 @@ Projetos de estudo, ferramentas compiladas e backups ficam fora do repositório.
 
 ## 🔧 Manutenção
 
-Projeto pessoal com melhorias incrementais e auditorias por linguagem.
-
-Antes de editar:
-
-- Inspecionar a configuração existente.
-- Criar e verificar backups.
-- Alterar um arquivo por vez.
-- Validar sintaxe, funcionamento e regressões.
-- Conferir o estado do Git antes de integrar mudanças.
-
-Quando existem alterações versionadas, o fluxo utilizado é:
-
-**Branch de trabalho → Commit → Push → Pull Request → Merge na `main`.**
-
-Auditorias concluídas sem alterações no repositório não exigem Pull Requests vazios.
+- Inspecionar antes de editar, fazer backup e alterar um arquivo por vez.
+- Validar sintaxe, funcionamento, regressões e estado do Git.
+- Manter este **README com no máximo 200 linhas**, inclusive linhas em branco.
+- Fluxo: **branch de trabalho → commit → push → Pull Request → merge na `main`**.
+- Auditorias sem alterações versionadas não exigem Pull Requests vazios.
 
 ## 👨‍💻 Autor e licença
 
@@ -271,6 +189,6 @@ Auditorias concluídas sem alterações no repositório não exigem Pull Request
 
 - [GitHub](https://github.com/RichardKBO)
 - [LinkedIn](https://www.linkedin.com/in/richard-k-b-oliveira-9a1a3b287/)
-- [Repositório no GitHub](https://github.com/RichardKBO/neovim-lazyvim-config)
+- [Repositório](https://github.com/RichardKBO/neovim-lazyvim-config)
 
-Consulte o arquivo [LICENSE](LICENSE).
+Consulte [LICENSE](LICENSE).

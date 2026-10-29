@@ -7,6 +7,8 @@ local M = {}
 local projetos = require("languages.go.projects")
 local runner = require("languages.go.runner")
 local debugger = require("languages.go.debugger")
+local dependencias = require("languages.go.dependencies")
+local informacoes = require("languages.go.info")
 
 -- ========================================
 -- UTILITARIOS
@@ -20,7 +22,10 @@ local function normalizar(caminho)
   return vim.fs.normalize(vim.fn.fnamemodify(caminho, ":p"))
 end
 
--- Identificar o diretorio do arquivo.
+-- ========================================
+-- IDENTIFICAR DIRETORIO
+-- ========================================
+
 local function diretorio_atual(arquivo)
   if not arquivo or arquivo == "" then
     return vim.fn.getcwd()
@@ -113,13 +118,55 @@ local function testar_modulo(raiz)
 end
 
 -- ========================================
+-- ANALISAR PACOTE COM GOLANGCI-LINT
+-- ========================================
+
+local function analisar_pacote(buffer)
+  -- Garantir que o buffer original
+  -- ainda existe e esta carregado.
+  if not vim.api.nvim_buf_is_valid(buffer) or not vim.api.nvim_buf_is_loaded(buffer) then
+    avisar("Go: buffer original indisponivel.", vim.log.levels.WARN)
+    return
+  end
+
+  if vim.bo[buffer].filetype ~= "go" then
+    avisar("Go: o buffer original nao e Go.", vim.log.levels.WARN)
+    return
+  end
+
+  -- Evitar analisar alteracoes nao salvas.
+  if vim.bo[buffer].modified then
+    avisar("Go: salve o arquivo antes de executar o lint.", vim.log.levels.WARN)
+    return
+  end
+
+  -- Reutilizar a configuracao contextual
+  -- existente em plugins/go-lint.lua.
+  local ok, erro = pcall(function()
+    vim.api.nvim_buf_call(buffer, function()
+      require("lint").try_lint("golangcilint")
+    end)
+  end)
+
+  if not ok then
+    avisar("Go: falha ao solicitar lint: " .. tostring(erro), vim.log.levels.ERROR)
+    return
+  end
+
+  -- A analise e assincrona.
+  -- Esta mensagem nao indica sucesso final.
+  avisar("Go: analise do pacote solicitada.")
+end
+
+-- ========================================
 -- MENU INTERATIVO
 -- ========================================
 
 function M.abrir()
-  -- Capturar o arquivo antes de abrir
-  -- a janela de selecao.
-  local arquivo = vim.api.nvim_buf_get_name(0)
+  -- Capturar arquivo e buffer antes
+  -- de abrir a janela de selecao.
+  local buffer = vim.api.nvim_get_current_buf()
+  local arquivo = vim.api.nvim_buf_get_name(buffer)
 
   local extensao = ""
 
@@ -128,6 +175,10 @@ function M.abrir()
   end
 
   local raiz = M.raiz_modulo(arquivo)
+
+  -- ========================================
+  -- CRIACAO DE PROJETOS
+  -- ========================================
 
   local opcoes = {
     {
@@ -138,7 +189,10 @@ function M.abrir()
     },
   }
 
-  -- Operacoes relativas ao arquivo Go.
+  -- ========================================
+  -- OPERACOES DO ARQUIVO GO
+  -- ========================================
+
   if extensao == "go" then
     table.insert(opcoes, {
       nome = "Executar programa/pacote (F6)",
@@ -155,7 +209,10 @@ function M.abrir()
     })
   end
 
-  -- Operacoes relativas ao modulo Go.
+  -- ========================================
+  -- OPERACOES DO MODULO GO
+  -- ========================================
+
   if raiz then
     table.insert(opcoes, {
       nome = "Compilar modulo (go build ./...)",
@@ -170,7 +227,66 @@ function M.abrir()
         testar_modulo(raiz)
       end,
     })
+
+    -- Selecao explicita de executaveis.
+    -- Funciona mesmo dentro de main.go.
+    if extensao == "go" then
+      table.insert(opcoes, {
+        nome = "Selecionar e executar programa",
+        executar = function()
+          runner.selecionar_programa(arquivo)
+        end,
+      })
+    end
   end
+
+  -- ========================================
+  -- LINT CONTEXTUAL
+  -- ========================================
+
+  if extensao == "go" then
+    table.insert(opcoes, {
+      nome = "Analisar pacote atual (golangci-lint)",
+      executar = function()
+        analisar_pacote(buffer)
+      end,
+    })
+  end
+
+  -- ========================================
+  -- GERENCIAMENTO DE DEPENDENCIAS
+  -- ========================================
+
+  if raiz then
+    table.insert(opcoes, {
+      nome = "Organizar dependencias (go mod tidy)",
+      executar = function()
+        dependencias.organizar(arquivo)
+      end,
+    })
+  end
+
+  -- ========================================
+  -- INFORMACOES DO MODULO GO
+  -- ========================================
+
+  -- Disponibilizar somente quando
+  -- houver um modulo Go identificado.
+  --
+  -- A consulta e a janela ficam
+  -- inteiramente no modulo info.lua.
+  if raiz then
+    table.insert(opcoes, {
+      nome = "Informacoes do modulo Go",
+      executar = function()
+        informacoes.mostrar(arquivo)
+      end,
+    })
+  end
+
+  -- ========================================
+  -- EXIBIR MENU
+  -- ========================================
 
   vim.ui.select(opcoes, {
     prompt = "Go - Gerenciamento de projetos",

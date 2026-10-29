@@ -171,9 +171,6 @@ end
 local function executar_pacote(diretorio)
   avisar("Go F6: executando pacote em " .. diretorio)
 
-  -- go run . considera os arquivos Go
-  -- compilaveis do pacote, em vez de
-  -- executar somente o arquivo aberto.
   executar_terminal({
     "go",
     "run",
@@ -196,7 +193,95 @@ local function executar_isolado(arquivo)
 end
 
 -- ========================================
--- RUNNER DINAMICO
+-- SELETOR COMPARTILHADO DE PROGRAMAS
+-- ========================================
+
+local function selecionar_e_executar(programas)
+  vim.ui.select(programas, {
+    prompt = "Go: escolher programa para executar",
+
+    format_item = function(item)
+      return item.diretorio
+    end,
+  }, function(escolha)
+    if escolha then
+      executar_pacote(escolha.diretorio)
+    end
+  end)
+end
+
+-- ========================================
+-- SELECAO EXPLICITA DE EXECUTAVEIS
+-- ========================================
+
+-- Funcao publica para uso futuro pelo GoMenu.
+-- Diferentemente do F6, oferece a escolha
+-- mesmo quando o arquivo atual e main.go.
+function M.selecionar_programa(arquivo)
+  if ocupado then
+    avisar("Go: aguarde a operacao anterior.", vim.log.levels.WARN)
+    return
+  end
+
+  arquivo = arquivo or vim.api.nvim_buf_get_name(0)
+
+  if arquivo == "" then
+    avisar("Go: nenhum arquivo aberto.", vim.log.levels.WARN)
+    return
+  end
+
+  arquivo = normalizar(arquivo)
+
+  if vim.fn.fnamemodify(arquivo, ":e"):lower() ~= "go" then
+    avisar("Go: arquivo atual nao e .go.", vim.log.levels.WARN)
+    return
+  end
+
+  if vim.fn.executable("go") ~= 1 then
+    avisar("Go: compilador nao encontrado.", vim.log.levels.ERROR)
+    return
+  end
+
+  -- Salvar o arquivo atual antes da busca.
+  local atual = vim.api.nvim_buf_get_name(0)
+
+  if atual ~= "" and normalizar(atual) == arquivo then
+    local ok, erro = pcall(vim.cmd, "update")
+
+    if not ok then
+      avisar("Go: falha ao salvar arquivo: " .. tostring(erro), vim.log.levels.ERROR)
+      return
+    end
+  end
+
+  if vim.fn.filereadable(arquivo) ~= 1 then
+    avisar("Go: arquivo nao encontrado no disco.", vim.log.levels.ERROR)
+    return
+  end
+
+  local raiz = localizar_modulo(arquivo)
+
+  if not raiz then
+    avisar("Go: nenhum go.mod encontrado para selecionar executaveis.", vim.log.levels.WARN)
+    return
+  end
+
+  ocupado = true
+
+  encontrar_programas(raiz, function(programas)
+    ocupado = false
+
+    if #programas == 0 then
+      avisar("Go: nenhum pacote main encontrado neste modulo.", vim.log.levels.WARN)
+      return
+    end
+
+    selecionar_e_executar(programas)
+  end)
+end
+
+-- ========================================
+-- RUNNER DINAMICO F6
 -- ========================================
 
 function M.executar(arquivo)
@@ -281,17 +366,7 @@ function M.executar(arquivo)
       -- deixar o usuario escolher.
       ocupado = false
 
-      vim.ui.select(programas, {
-        prompt = "Go: escolher programa para executar",
-
-        format_item = function(item)
-          return item.diretorio
-        end,
-      }, function(escolha)
-        if escolha then
-          executar_pacote(escolha.diretorio)
-        end
-      end)
+      selecionar_e_executar(programas)
     end)
   end)
 end
