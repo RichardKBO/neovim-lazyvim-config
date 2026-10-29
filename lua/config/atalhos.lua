@@ -7,7 +7,7 @@ local linhas_base = {
   "[EXECUCAO E DEBUG]",
   "  F5            Adicionar/remover breakpoint",
   "  F6            Executar arquivo atual",
-  "  F7            Atualizar/compilar CMake",
+  "  F7            Gerenciar projeto (conforme linguagem)",
   "  F8            Iniciar/continuar depuracao",
   "",
   "[NAVEGACAO]",

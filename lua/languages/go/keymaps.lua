@@ -23,6 +23,7 @@ function M.linhas_ajuda()
     "  :GoMenu        Gerenciar projetos Go",
     "  F5             Adicionar/remover breakpoint",
     "  F6             Executar pacote atual",
+    "  F7             Abrir GoMenu (build, testes e projetos)",
     "  F8             Depurar pacote / continuar",
     "",
   }
@@ -55,13 +56,22 @@ local function aplicar(buffer)
     return
   end
 
-  -- Abrir GoMenu.
+  -- Abrir GoMenu pelo Espaco + g + m.
   vim.keymap.set("n", "<leader>gm", function()
     require("languages.go.menu").abrir()
   end, {
     buffer = buffer,
     silent = true,
     desc = "Go: abrir GoMenu",
+  })
+
+  -- F7: abrir gerenciamento contextual Go.
+  vim.keymap.set("n", "<F7>", function()
+    require("languages.go.menu").abrir()
+  end, {
+    buffer = buffer,
+    silent = true,
+    desc = "Go: abrir GoMenu (build, testes e projetos)",
   })
 
   -- F8 dinamico com Delve.
@@ -79,7 +89,9 @@ end
 -- ========================================
 
 function M.setup()
-  local grupo = vim.api.nvim_create_augroup("GoDebuggerKeymaps", { clear = true })
+  local grupo = vim.api.nvim_create_augroup("GoDebuggerKeymaps", {
+    clear = true,
+  })
 
   vim.api.nvim_create_autocmd("FileType", {
     group = grupo,
