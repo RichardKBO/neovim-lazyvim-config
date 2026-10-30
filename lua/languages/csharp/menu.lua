@@ -302,30 +302,6 @@ local function localizar_projeto()
 end
 
 -- ========================================
--- COMPILAR PROJETO ATUAL
--- ========================================
-
-local function compilar_projeto()
-  local projeto = localizar_projeto()
-
-  if not projeto then
-    return
-  end
-
-  vim.cmd("botright split")
-
-  vim.fn.termopen({
-    "dotnet",
-    "build",
-    projeto,
-    "--configuration",
-    "Debug",
-  }, {
-    cwd = vim.fs.dirname(projeto),
-  })
-end
-
--- ========================================
 -- INICIAR DEPURACAO EXISTENTE
 -- ========================================
 
@@ -394,7 +370,7 @@ function M.abrir()
 
       require("languages.csharp.runner").executar(arquivo)
     elseif escolha == "Compilar projeto atual" then
-      compilar_projeto()
+      require("languages.csharp.build").compilar()
     elseif escolha == "Iniciar depuracao" then
       iniciar_depurar()
     end
