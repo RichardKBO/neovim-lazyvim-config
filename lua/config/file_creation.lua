@@ -9,6 +9,9 @@ local manipuladores = {
   cs = function(caminho)
     return require("languages.csharp.namespace_auto").gerar_no_arquivo(caminho)
   end,
+  java = function(caminho)
+    return require("languages.java.package_auto").gerar_no_arquivo(caminho)
+  end,
 }
 
 -- ========================================
