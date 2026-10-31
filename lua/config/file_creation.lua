@@ -12,6 +12,9 @@ local manipuladores = {
   java = function(caminho)
     return require("languages.java.package_auto").gerar_no_arquivo(caminho)
   end,
+  kt = function(caminho)
+    return require("languages.kotlin.package_auto").gerar_no_arquivo(caminho)
+  end,
 }
 
 -- ========================================
