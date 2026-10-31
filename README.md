@@ -24,8 +24,8 @@ Configuração pessoal do **Neovim + LazyVim**, desenvolvida em Lua e organizada
 | Java | JDTLS, Maven, Gradle, F6/F8 | Auditoria concluída |
 | Kotlin | Gradle, Kotlin LSP, KotlinMenu, F5/F6/F8 | Auditoria concluída |
 | C / C++ | Clangd, CMake, CodeLLDB, F6/F7/F8 | Auditoria C++ concluída |
-| Go | Gopls, Delve, golangci-lint, GoMenu, F5/F6/F7/F8 | Auditoria em fechamento; integração pendente |
-| C# | .NET, Roslyn, NetCoreDbg, executor compartilhado | Auditoria realizada; reforço prático pendente |
+| Go | Gopls, Delve, golangci-lint, GoMenu, F5/F6/F7/F8 | Auditoria concluída; PR #20 integrado |
+| C# | .NET, Roslyn, NetCoreDbg, executor compartilhado | Auditoria e melhorias concluídas; PR #21 integrado |
 | Python | Pyright, Ruff, debugpy, PythonMenu | Auditoria concluída |
 | Ruby | Solargraph, RuboCop, Bundler, RubyMenu | Auditoria concluída |
 | PHP | Intelephense, Composer, Xdebug, PHPMenu | Configurado; auditoria pendente |
@@ -37,11 +37,11 @@ Configuração pessoal do **Neovim + LazyVim**, desenvolvida em Lua e organizada
 
 **Validação funcional** significa testes específicos realizados. **Auditoria concluída** indica revisão aprofundada; funcionalidades ainda não integradas à `main` são identificadas separadamente.
 
-Swift foi validado no Linux Mint com SourceKit-LSP, SwiftPM, LLDB-DAP e 11 testes automatizados aprovados. A auditoria de Dart foi cancelada. C mantém seu suporte, mas não integra a sequência de auditorias aprofundadas.
+Swift foi validado no Linux Mint com SourceKit-LSP, SwiftPM, LLDB-DAP e 11 testes automatizados aprovados. Dart permanece pendente, com posição futura a definir. C mantém seu suporte, mas não integra a sequência de auditorias aprofundadas.
 
 ## ✅ Auditorias aprofundadas
 
-**Concluídas e integradas:** Python, Ruby, Rust, Java, Kotlin e C++.
+**Concluídas e integradas:** Python, Ruby, Rust, Java, Kotlin, C++, Go e C#.
 
 ### Kotlin — Outubro de 2026
 
@@ -51,7 +51,7 @@ Swift foi validado no Linux Mint com SourceKit-LSP, SwiftPM, LLDB-DAP e 11 teste
 - F6 com múltiplas `main()`, F5/F8 com inspeção, passos e continuação; Gradle Build/Test aprovados.
 - Limitações: IncRename teve renomeação parcial; formatação do LSP não alterou o arquivo no teste. Allman não foi forçado.
 
-### Go — Outubro de 2026 (branch `feat/go-audit`)
+### Go — Outubro de 2026 (PR #20 integrado)
 
 - F6 com seleção contextual de executáveis em módulos internos e externos; arquivos sem `go.mod` executados isoladamente.
 - F5/F8 com Delve: breakpoints, inspeção de variáveis, continuação e encerramento da sessão DAP.
@@ -59,22 +59,23 @@ Swift foi validado no Linux Mint com SourceKit-LSP, SwiftPM, LLDB-DAP e 11 teste
 - GoMenu (`:GoMenu`, `Espaço + g + m` e F7): criar projeto, executar, depurar, compilar, testar, selecionar executável, analisar, organizar dependências e mostrar informações do módulo.
 - As opções dependentes de `go.mod` são ocultadas em arquivos isolados; `go mod tidy` requer confirmação e protege alterações não salvas em `go.mod`/`go.sum`.
 - F7 do C++/CMake e Central de Atalhos testados após a integração do GoMenu.
-- **Estado:** testes funcionais realizados; revisão Git, commit, PR e merge na `main` ainda pendentes.
+- **Estado:** auditoria concluída e integrada à `main` pelo PR #20.
+
+### C# — Outubro de 2026 (PR #21 integrado)
+
+- C12: criação de arquivos `.cs` pelo Snacks Explorer com `namespace` automático conforme o projeto e suas pastas.
+- C13: criação de classes pelo C#Menu com escolha de diretório, namespace e proteção contra sobrescrita.
+- C14: compilação de `.csproj`, `.sln` e `.slnx` pelo C#Menu, usando terminal independente.
+- C15: seleção inteligente de soluções, classificação por associação ao projeto e entrada manual preservada.
+- Regressões de compilação, F5/F6/F8 e integração com NetCoreDbg verificadas nos cenários de auditoria.
 
 ### Próxima sequência de trabalho
 
-1. Fechar a auditoria Go (revisão, commit e integração).
-2. C#: reforço prático da configuração existente, sem refazer a auditoria.
-3. TypeScript.
-4. Swift.
-5. PHP.
-6. JavaScript.
-7. JSON.
-8. HTML.
-9. CSS.
-10. SQL.
-
-Depois: frameworks opcionais, refinamento global, GrugFar, regressões e infraestrutura automatizada de testes.
+1. Melhorias das linguagens já auditadas: Java, Kotlin e Go (`package` automático); revisar Rust, Python, Ruby e C++ somente se necessário.
+2. Retomar auditorias: TypeScript → Swift → PHP → JavaScript → JSON → HTML → CSS → SQL. Dart permanece pendente, sem posição definida.
+3. Tratar autoimports e melhorias específicas das linguagens ainda não auditadas durante suas respectivas auditorias.
+4. Após as auditorias: autocomplete de caminhos, navegador global de projetos/workspaces, histórico persistente de projetos externos, múltiplos entrypoints, frameworks e GrugFar.
+5. Por último: infraestrutura global de testes e regressões.
 
 ## 🚀 Instalação
 
@@ -179,7 +180,7 @@ Projetos de estudo, ferramentas compiladas e backups ficam fora do repositório.
 
 - Inspecionar antes de editar, fazer backup e alterar um arquivo por vez.
 - Validar sintaxe, funcionamento, regressões e estado do Git.
-- Manter este **README com no máximo 200 linhas**, inclusive linhas em branco.
+- Manter este **README com no máximo 250 linhas**, inclusive linhas em branco.
 - Fluxo: **branch de trabalho → commit → push → Pull Request → merge na `main`**.
 - Auditorias sem alterações versionadas não exigem Pull Requests vazios.
 
