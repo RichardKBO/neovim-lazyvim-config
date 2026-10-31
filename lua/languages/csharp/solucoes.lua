@@ -71,10 +71,50 @@ local function localizar_projeto_atual()
 end
 
 -- ========================================
+-- DESCOBRIR SOLUCOES PROXIMAS
+-- ========================================
+
+local function coletar_solucoes(pasta, padrao, encontrados, vistos)
+  for _, caminho in ipairs(vim.fn.globpath(pasta, padrao, false, true)) do
+    local solucao = vim.fs.normalize(caminho)
+
+    if solucao_valida(solucao) and not vistos[solucao] then
+      vistos[solucao] = true
+      table.insert(encontrados, solucao)
+    end
+  end
+end
+
+function M.descobrir_solucoes()
+  local arquivo = vim.api.nvim_buf_get_name(0)
+  local projeto = localizar_projeto_atual()
+
+  local diretorio = projeto and vim.fs.dirname(projeto)
+    or (arquivo ~= "" and vim.fs.dirname(arquivo) or vim.fn.getcwd())
+
+  local pai = vim.fs.dirname(diretorio)
+  local encontrados = {}
+  local vistos = {}
+
+  for _, extensao in ipairs({ "*.sln", "*.slnx" }) do
+    coletar_solucoes(diretorio, extensao, encontrados, vistos)
+    coletar_solucoes(diretorio, "*/" .. extensao, encontrados, vistos)
+
+    if pai and pai ~= diretorio and vim.fs.dirname(pai) ~= pai then
+      coletar_solucoes(pai, extensao, encontrados, vistos)
+      coletar_solucoes(pai, "*/" .. extensao, encontrados, vistos)
+    end
+  end
+
+  table.sort(encontrados)
+  return encontrados
+end
+
+-- ========================================
 -- SOLICITAR SOLUCAO
 -- ========================================
 
-local function solicitar_solucao(callback)
+local function solicitar_solucao_manual(callback)
   local entrada = vim.fn.input("Caminho da solucao (.sln/.slnx): ", vim.fn.getcwd() .. "/", "file")
 
   local solucao = normalizar_caminho(entrada)
@@ -90,6 +130,57 @@ local function solicitar_solucao(callback)
   end
 
   callback(solucao)
+end
+
+-- ========================================
+-- SELECIONAR SOLUCAO INTELIGENTEMENTE
+-- ========================================
+
+local function solicitar_solucao(callback)
+  M.classificar_solucoes(function(grupos)
+    local opcoes = {}
+
+    local function incluir(solucoes, categoria)
+      for _, solucao in ipairs(solucoes) do
+        table.insert(opcoes, {
+          caminho = solucao,
+          rotulo = categoria .. " | " .. solucao,
+        })
+      end
+    end
+
+    incluir(grupos.associadas, "Associada")
+    incluir(grupos.outras, "Outra")
+    incluir(grupos.nao_verificadas, "Nao verificada")
+
+    table.insert(opcoes, {
+      manual = true,
+      rotulo = "Informar caminho manualmente...",
+    })
+
+    vim.ui.select(opcoes, {
+      prompt = "Selecionar solucao (.sln/.slnx):",
+      format_item = function(item)
+        return item.rotulo
+      end,
+    }, function(escolha)
+      if not escolha then
+        return
+      end
+
+      if escolha.manual then
+        solicitar_solucao_manual(callback)
+        return
+      end
+
+      if not solucao_valida(escolha.caminho) then
+        vim.notify("Solucao inexistente ou invalida.", vim.log.levels.ERROR)
+        return
+      end
+
+      callback(escolha.caminho)
+    end)
+  end)
 end
 
 -- ========================================
@@ -168,6 +259,96 @@ local function consultar_projetos(solucao, callback)
       callback(projetos)
     end)
   end)
+end
+
+-- ========================================
+-- CLASSIFICAR SOLUCOES POR PROJETO
+-- ========================================
+
+local function solucao_contem_projeto(saida, solucao, projeto)
+  for linha in saida:gmatch("[^\r\n]+") do
+    local relativo = vim.trim(linha)
+
+    if relativo:match("%.csproj$") then
+      local absoluto = vim.fs.normalize(
+        vim.fs.joinpath(vim.fs.dirname(solucao), relativo)
+      )
+
+      if absoluto == projeto then
+        return true
+      end
+    end
+  end
+
+  return false
+end
+
+function M.classificar_solucoes(callback)
+  local solucoes = M.descobrir_solucoes()
+  local projeto = localizar_projeto_atual()
+
+  local grupos = {
+    associadas = {},
+    outras = {},
+    nao_verificadas = {},
+  }
+
+  if not projeto then
+    grupos.nao_verificadas = solucoes
+    callback(grupos)
+    return
+  end
+
+  local pendentes = #solucoes
+
+  if pendentes == 0 then
+    callback(grupos)
+    return
+  end
+
+  for _, solucao in ipairs(solucoes) do
+    vim.system({
+      "dotnet",
+      "sln",
+      solucao,
+      "list",
+    }, {
+      cwd = vim.fs.dirname(solucao),
+      text = true,
+    }, function(resposta)
+      vim.schedule(function()
+        local destino = grupos.nao_verificadas
+        local saida = resposta.stdout or ""
+        local formato_valido = saida:find("No projects found", 1, true) ~= nil
+
+        for linha in saida:gmatch("[^\r\n]+") do
+          if vim.trim(linha):match("^%-+$") then
+            formato_valido = true
+            break
+          end
+        end
+
+        if resposta.code == 0 and formato_valido then
+          if solucao_contem_projeto(saida, solucao, projeto) then
+            destino = grupos.associadas
+          else
+            destino = grupos.outras
+          end
+        end
+
+        table.insert(destino, solucao)
+        pendentes = pendentes - 1
+
+        if pendentes == 0 then
+          table.sort(grupos.associadas)
+          table.sort(grupos.outras)
+          table.sort(grupos.nao_verificadas)
+
+          callback(grupos)
+        end
+      end)
+    end)
+  end
 end
 
 -- ========================================

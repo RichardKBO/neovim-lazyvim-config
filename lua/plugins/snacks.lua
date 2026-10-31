@@ -1,6 +1,9 @@
 -- Carregar filtros modulares
 local filtros = require("config.snacks.filters")
 
+-- Acao modular de criacao de arquivos
+local explorer_add = require("config.snacks.explorer_add")
+
 return {
   {
     "folke/snacks.nvim",
@@ -22,6 +25,11 @@ return {
           -- Explorador lateral
           explorer = {
             exclude = vim.deepcopy(filtros.exclude),
+
+            -- Preservar a tecla "a" com automacao modular
+            actions = {
+              explorer_add = explorer_add.adicionar,
+            },
           },
         },
       },
