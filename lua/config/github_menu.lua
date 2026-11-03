@@ -146,7 +146,9 @@ function M.abrir()
     if escolhido.id == "issues" then
       snacks.picker.gh_issue(configuracao)
     elseif escolhido.id == "prs" then
-      snacks.picker.gh_pr(configuracao)
+      snacks.picker.gh_pr(vim.tbl_extend("force", configuracao, {
+        state = "all",
+      }))
     elseif escolhido.id == "issue_create" then
       local endereco = "https://github.com/" .. repositorio .. "/issues/new"
       local _, erro = vim.ui.open(endereco)
