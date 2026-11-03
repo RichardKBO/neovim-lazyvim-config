@@ -117,3 +117,5 @@ require("languages.typescript.menu").setup()
 
 require("config.theme_selector").setup()
 require("config.atalhos").setup()
+require("config.git_atalhos").setup()
+require("config.github_menu").setup()
