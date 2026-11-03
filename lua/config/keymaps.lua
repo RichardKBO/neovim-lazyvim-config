@@ -140,3 +140,9 @@ vim.keymap.set("n", "<leader>sf", function()
 end, {
   desc = "Abrir menu Swift",
 })
+
+-- ========================================
+-- LAZYGIT - PROTECAO DE REPOSITORIO
+-- ========================================
+
+require("config.lazygit_safe").setup()
