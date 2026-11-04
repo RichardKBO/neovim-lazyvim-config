@@ -15,6 +15,9 @@ local manipuladores = {
   kt = function(caminho)
     return require("languages.kotlin.package_auto").gerar_no_arquivo(caminho)
   end,
+  go = function(caminho)
+    return require("languages.go.package_auto").gerar_no_arquivo(caminho)
+  end,
 }
 
 -- ========================================
