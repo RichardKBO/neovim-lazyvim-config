@@ -101,9 +101,6 @@ require("languages.swift.lsp").setup()
 -- Registrar o comando :SwiftMenu.
 require("languages.swift.menu").setup()
 
--- Registrar o comando :SwiftMenu.
-require("languages.swift.menu").setup()
-
 -- ========================================
 -- TYPESCRIPT
 -- ========================================
