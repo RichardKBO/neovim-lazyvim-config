@@ -21,36 +21,30 @@ function M.gerar(tipo, nome, opcoes)
 
   if tipo == "class" then
     linhas = {
-      "class " .. nome,
-      "{",
-      "    init()",
-      "    {",
+      "class " .. nome .. " {",
+      "    init() {",
       "    }",
       "}",
     }
   elseif tipo == "struct" then
     linhas = {
-      "struct " .. nome,
-      "{",
+      "struct " .. nome .. " {",
       "}",
     }
   elseif tipo == "protocol" then
     linhas = {
-      "protocol " .. nome,
-      "{",
+      "protocol " .. nome .. " {",
       "}",
     }
   elseif tipo == "enum" then
     linhas = {
-      "enum " .. nome,
-      "{",
+      "enum " .. nome .. " {",
       "    case exemplo",
       "}",
     }
   elseif tipo == "actor" then
     linhas = {
-      "actor " .. nome,
-      "{",
+      "actor " .. nome .. " {",
       "}",
     }
   elseif tipo == "extension" then
@@ -61,14 +55,12 @@ function M.gerar(tipo, nome, opcoes)
     end
 
     linhas = {
-      "extension " .. alvo,
-      "{",
+      "extension " .. alvo .. " {",
       "}",
     }
   elseif tipo == "error" then
     linhas = {
-      "enum " .. nome .. ": Error",
-      "{",
+      "enum " .. nome .. ": Error {",
       "    case exemplo",
       "}",
     }
@@ -83,11 +75,9 @@ function M.gerar(tipo, nome, opcoes)
       "import Testing",
       "@testable import " .. modulo,
       "",
-      "struct " .. nome,
-      "{",
+      "struct " .. nome .. " {",
       "    @Test",
-      "    func exemplo()",
-      "    {",
+      "    func exemplo() {",
       "        #expect(true)",
       "    }",
       "}",
