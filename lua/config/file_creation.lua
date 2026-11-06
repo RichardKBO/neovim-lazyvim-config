@@ -18,6 +18,9 @@ local manipuladores = {
   go = function(caminho)
     return require("languages.go.package_auto").gerar_no_arquivo(caminho)
   end,
+  swift = function(caminho)
+    return require("languages.swift.file_auto").gerar_no_arquivo(caminho)
+  end,
 }
 
 -- ========================================
