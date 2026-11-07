@@ -195,6 +195,64 @@ function M.abrir()
         require("languages.swift.runner").executar(arquivo)
       end,
     },
+
+    -- ========================================
+    -- INTEGRACAO COM TARGETS SWIFTPM
+    -- ========================================
+    {
+      nome = "Criar target SwiftPM (biblioteca, executavel ou testes)",
+      executar = function()
+        if not vim.api.nvim_buf_is_valid(buffer) or vim.api.nvim_get_current_buf() ~= buffer then
+          avisar("O buffer original mudou.", vim.log.levels.WARN)
+          return
+        end
+
+        if arquivo == "" or vim.fn.fnamemodify(arquivo, ":e"):lower() ~= "swift" then
+          avisar("Abra um arquivo SwiftPM primeiro.", vim.log.levels.WARN)
+          return
+        end
+
+        require("languages.swift.targets").criar_target(arquivo)
+      end,
+    },
+    -- ========================================
+    -- INTEGRACAO COM DEPENDENCIAS SWIFTPM
+    -- ========================================
+    {
+      nome = "Adicionar referencia entre targets SwiftPM",
+      executar = function()
+        if not vim.api.nvim_buf_is_valid(buffer) or vim.api.nvim_get_current_buf() ~= buffer then
+          avisar("O buffer original mudou.", vim.log.levels.WARN)
+          return
+        end
+
+        if arquivo == "" or vim.fn.fnamemodify(arquivo, ":e"):lower() ~= "swift" then
+          avisar("Abra um arquivo SwiftPM primeiro.", vim.log.levels.WARN)
+          return
+        end
+
+        require("languages.swift.dependencies").adicionar_referencia(arquivo)
+      end,
+    },
+    -- ========================================
+    -- INTEGRACAO COM SWIFT TESTING
+    -- ========================================
+    {
+      nome = "Executar testes SwiftPM",
+      executar = function()
+        if not vim.api.nvim_buf_is_valid(buffer) or vim.api.nvim_get_current_buf() ~= buffer then
+          avisar("O buffer original mudou.", vim.log.levels.WARN)
+          return
+        end
+
+        if arquivo == "" or vim.fn.fnamemodify(arquivo, ":e"):lower() ~= "swift" then
+          avisar("Abra um arquivo SwiftPM primeiro.", vim.log.levels.WARN)
+          return
+        end
+
+        require("languages.swift.tests").executar(arquivo)
+      end,
+    },
     {
       nome = "Abrir projeto Swift existente",
       executar = abrir_projeto,
