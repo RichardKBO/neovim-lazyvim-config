@@ -1,8 +1,6 @@
 -- Arquivos e pastas de compilacao C++
 return {
   -- Diretorios
-  "build",
-  "out",
   "**/build",
   "**/out",
   "**/build/**",
