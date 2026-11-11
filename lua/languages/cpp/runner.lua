@@ -15,19 +15,29 @@ local function normalizar(caminho)
   return vim.fs.normalize(vim.fn.fnamemodify(caminho, ":p"))
 end
 
--- Encontrar o projeto a partir do arquivo,
--- sem depender do cwd do Neovim.
-local function localizar_projeto(arquivo)
-  local encontrados = vim.fs.find("CMakeLists.txt", {
-    path = vim.fs.dirname(arquivo),
-    upward = true,
-  })
+-- Utilizar o detector contextual compartilhado.
+local function detectar_contexto(arquivo)
+  local carregou, modulo = pcall(
+    require,
+    "languages.cpp.context"
+  )
 
-  if #encontrados == 0 then
-    return nil
+  if not carregou
+    or type(modulo.detectar) ~= "function"
+  then
+    return nil, "Modulo de contexto C++ indisponivel."
   end
 
-  return vim.fs.dirname(encontrados[1])
+  local ok, contexto, erro = pcall(
+    modulo.detectar,
+    arquivo
+  )
+
+  if not ok then
+    return nil, tostring(contexto)
+  end
+
+  return contexto, erro
 end
 
 local function ler_json(caminho)
@@ -737,7 +747,76 @@ function M.configurar(arquivo)
 
   arquivo = normalizar(arquivo)
 
-  local raiz = localizar_projeto(arquivo)
+  -- ========================================
+  -- Contexto compartilhado por F6, F7 e F8.
+  local contexto, erro_contexto = detectar_contexto(arquivo)
+
+  if not contexto then
+    avisar(
+      "C++: falha na deteccao de projeto: "
+        .. tostring(erro_contexto),
+      vim.log.levels.ERROR
+    )
+    return
+  end
+
+  if contexto.sistema == "meson" then
+    local raiz_meson = contexto.raiz
+
+    -- Manter a mesma protecao de salvamento do ramo CMake.
+    local buffer_atual = vim.api.nvim_buf_get_name(0)
+
+    if buffer_atual ~= "" and normalizar(buffer_atual) == arquivo then
+      local salvou, erro_salvar = pcall(vim.cmd, "update")
+
+      if not salvou then
+        avisar("C++: falha ao salvar: " .. tostring(erro_salvar), vim.log.levels.ERROR)
+        return
+      end
+    end
+
+    local ok_build, modulo_build = pcall(require, "languages.cpp.meson.build")
+
+    if not ok_build or type(modulo_build.configurar) ~= "function" then
+      avisar("C++: modulo de configuracao Meson indisponivel.", vim.log.levels.ERROR)
+      return
+    end
+
+    local diretorio_build = vim.fs.joinpath(raiz_meson, "build")
+
+    ocupado = true
+    avisar("C++: configurando Meson em " .. raiz_meson)
+
+    local ok_inicio, iniciou, erro_inicio = pcall(
+      modulo_build.configurar,
+      raiz_meson,
+      diretorio_build,
+      function(sucesso, mensagem)
+        ocupado = false
+
+        if not sucesso then
+          avisar("C++: falha na configuracao Meson: " .. tostring(mensagem), vim.log.levels.ERROR)
+          return
+        end
+
+        avisar("C++: configuracao Meson concluida: " .. raiz_meson)
+      end
+    )
+
+    if not ok_inicio or not iniciou then
+      ocupado = false
+      local detalhe = ok_inicio and erro_inicio or iniciou
+
+      avisar("C++: nao foi possivel iniciar Meson: " .. tostring(detalhe), vim.log.levels.ERROR)
+    end
+
+    return
+  end
+
+  -- ========================================
+  -- F7: CMAKE LEGADO - FLUXO PRESERVADO
+  -- ========================================
+  local raiz = contexto.raiz
 
   if not raiz then
     avisar("C++: projeto CMake nao encontrado para o arquivo atual.", vim.log.levels.WARN)
@@ -910,10 +989,92 @@ function M.preparar(arquivo, callback)
 
   ocupado = true
 
-  local raiz = localizar_projeto(arquivo)
+  -- ========================================
+  -- Utilizar o mesmo contexto do F7.
+  local contexto, erro_contexto = detectar_contexto(arquivo)
 
-  if raiz then
-    preparar_cmake(raiz, arquivo, callback)
+  if not contexto then
+    ocupado = false
+    avisar(
+      "C++: falha na deteccao de projeto: "
+        .. tostring(erro_contexto),
+      vim.log.levels.ERROR
+    )
+    return
+  end
+
+  if contexto.sistema == "meson" then
+    local raiz_meson = contexto.raiz
+
+    local ok_preparador, preparador = pcall(
+      require,
+      "languages.cpp.meson.prepare"
+    )
+
+    if not ok_preparador
+      or type(preparador.preparar) ~= "function"
+    then
+      ocupado = false
+      avisar(
+        "C++: preparador Meson indisponivel.",
+        vim.log.levels.ERROR
+      )
+      return
+    end
+
+    local ok_inicio, iniciou, erro_inicio = pcall(
+      preparador.preparar,
+      raiz_meson,
+      arquivo,
+      function(executavel, erro)
+        if erro then
+          ocupado = false
+          avisar(
+            "C++: falha na preparacao Meson: "
+              .. tostring(erro),
+            vim.log.levels.ERROR
+          )
+          return
+        end
+
+        -- Cancelamento da selecao de executaveis.
+        if not executavel then
+          ocupado = false
+          return
+        end
+
+        -- Contrato original compartilhado por F6 e F8.
+        concluir(executavel, callback)
+      end
+    )
+
+    if not ok_inicio or not iniciou then
+      ocupado = false
+
+      local motivo
+
+      if not ok_inicio then
+        motivo = iniciou
+      else
+        motivo = erro_inicio or "Operacao nao iniciada."
+      end
+
+      avisar(
+        "C++: nao foi possivel iniciar preparacao Meson: "
+          .. tostring(motivo),
+        vim.log.levels.ERROR
+      )
+    end
+
+    return
+  end
+
+  -- ========================================
+  -- CMAKE E STANDALONE PRESERVADOS
+  -- ========================================
+
+  if contexto.sistema == "cmake" then
+    preparar_cmake(contexto.raiz, arquivo, callback)
   else
     preparar_isolado(arquivo, extensao, callback)
   end
