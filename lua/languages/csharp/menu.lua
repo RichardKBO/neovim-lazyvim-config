@@ -332,12 +332,14 @@ function M.abrir()
     "Criar projeto C#",
     "Criar solucao C# (.sln / .slnx)",
     "Adicionar projeto a solucao",
+    "Adicionar ProjectReference",
     "Listar projetos da solucao",
     "Remover projeto da solucao",
     "Criar classe C# (namespace automatico)",
     "Executar projeto atual",
     "Compilar projeto atual",
     "Iniciar depuracao",
+    "Ajuda — C#",
     "Cancelar",
   }
 
@@ -354,6 +356,8 @@ function M.abrir()
       criar_solucao()
     elseif escolha == "Adicionar projeto a solucao" then
       require("languages.csharp.solucoes").adicionar()
+    elseif escolha == "Adicionar ProjectReference" then
+      require("languages.csharp.referencias").adicionar()
     elseif escolha == "Listar projetos da solucao" then
       require("languages.csharp.solucoes").listar()
     elseif escolha == "Remover projeto da solucao" then
@@ -373,6 +377,8 @@ function M.abrir()
       require("languages.csharp.build").compilar()
     elseif escolha == "Iniciar depuracao" then
       iniciar_depurar()
+    elseif escolha == "Ajuda — C#" then
+      require("languages.csharp.help").abrir()
     end
   end)
 end

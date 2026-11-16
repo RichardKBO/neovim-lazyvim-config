@@ -70,6 +70,8 @@ local function localizar_projeto_atual()
   return nil
 end
 
+M.localizar_projeto_atual = localizar_projeto_atual
+
 -- ========================================
 -- DESCOBRIR SOLUCOES PROXIMAS
 -- ========================================

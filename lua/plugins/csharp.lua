@@ -3,7 +3,9 @@
 
 return {
   {
-    "seblyng/roslyn.nvim",
+    "RichardKBO/roslyn.nvim",
+    commit = "d75930cc63bd5e3fb0cc9961965351e554e772f5",
+    pin = true,
 
     ft = { "cs" },
 
