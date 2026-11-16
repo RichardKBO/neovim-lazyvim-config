@@ -67,7 +67,10 @@ Swift foi validado no Linux Mint com SourceKit-LSP, SwiftPM, LLDB-DAP e 11 teste
 - C13: criação de classes pelo C#Menu com escolha de diretório, namespace e proteção contra sobrescrita.
 - C14: compilação de `.csproj`, `.sln` e `.slnx` pelo C#Menu, usando terminal independente.
 - C15: seleção inteligente de soluções, classificação por associação ao projeto e entrada manual preservada.
-- Regressões de compilação, F5/F6/F8 e integração com NetCoreDbg verificadas nos cenários de auditoria.
+- C16–C20: F6, F8, NetCoreDbg, carregamento de solução Roslyn e navegação LSP entre projetos verificados em laboratório.
+- ProjectReference: o C#Menu descobre projetos `.csproj`, permite seleção visual, bloqueia duplicatas e autorreferências e executa `dotnet add ... reference` com argumentos separados.
+- Roslyn: fork `RichardKBO/roslyn.nvim` fixado na revisão `d75930cc63bd5e3fb0cc9961965351e554e772f5`, com oito regressões aprovadas.
+- Regressões de compilação, execução, depuração, ProjectReference e integração com NetCoreDbg foram verificadas em fixtures isolados; seleção visual interativa requer validação manual no Neovim.
 
 ### Próxima sequência de trabalho
 
